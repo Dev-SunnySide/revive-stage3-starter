@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum RecoveryStatus {
+  IDENTIFIED
+  ANALYZING
+  ACTION_REQUIRED
+  IN_PROGRESS
+  RECOVERED
+  FAILED
+  DISMISSED
+}
+
+enum ActionType {
+  EMAIL
+  SMS
+  WHATSAPP
+  PAYMENT_LINK
+  MANUAL
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      UserRole @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businesses BusinessMember[]
+  activities ActivityLog[]
+}
+
+model Business {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  currency    String   @default("NGN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     BusinessMember[]
+  customers   Customer[]
+  transactions Transaction[]
+  recoveryCases RecoveryCase[]
+  activities  ActivityLog[]
+}
+
+model BusinessMember {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  email      String?
+  phone      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  recoveryCases RecoveryCase[]
+}
+
+model Transaction {
+  id         String            @id @default(cuid())
+  businessId String
+  customerId String?
+  reference  String            @unique
+  amount     Decimal           @db.Decimal(12, 2)
+  currency   String            @default("NGN")
+  status     TransactionStatus
+  paidAt     DateTime?
+  createdAt  DateTime          @default(now())
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  recoveryCases RecoveryCase[]
+}
+
+model RecoveryCase {
+  id              String         @id @default(cuid())
+  businessId      String
+  customerId      String?
+  transactionId   String
+  status          RecoveryStatus @default(IDENTIFIED)
+  reason          String
+  amountAtRisk    Decimal        @db.Decimal(12, 2)
+  recoveredAmount Decimal        @default(0) @db.Decimal(12, 2)
+  identifiedAt    DateTime       @default(now())
+  recoveredAt    DateTime?
+
+  business      Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  transaction   Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  recommendations AIRecommendation[]
+  actions       RecoveryAction[]
+}
+
+model AIRecommendation {
+  id             String   @id @default(cuid())
+  recoveryCaseId String
+  recommendation String
+  confidence     Decimal? @db.Decimal(5, 4)
+  reasoning      String?
+  createdAt      DateTime @default(now())
+
+  recoveryCase RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+}
+
+model RecoveryAction {
+  id             String     @id @default(cuid())
+  recoveryCaseId String
+  type           ActionType
+  status         String     @default("PENDING")
+  message        String?
+  executedAt     DateTime?
+  createdAt      DateTime   @default(now())
+
+  recoveryCase RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String?
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
