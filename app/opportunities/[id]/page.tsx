@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -47,7 +46,7 @@ type Opportunity = {
     reasoning: string | null;
   } | null;
 
-    recoveryAction: {
+  recoveryAction: {
     id: number;
     type: string;
     status: string;
@@ -84,18 +83,18 @@ export default function OpportunityDetailsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
+
   const [opportunity, setOpportunity] =
     useState<Opportunity | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [executing, setExecuting] = useState(false);
+  const [paymentStarting, setPaymentStarting] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
 
   useEffect(() => {
     async function loadOpportunity() {
       try {
-        const { id } = await params;
-
         const response = await fetch(
           `/api/opportunities/${id}`
         );
@@ -104,6 +103,11 @@ export default function OpportunityDetailsPage({
 
         if (data.success) {
           setOpportunity(data.opportunity);
+        } else {
+          console.error(
+            "Failed to load opportunity:",
+            data.error
+          );
         }
       } catch (error) {
         console.error(
@@ -116,17 +120,17 @@ export default function OpportunityDetailsPage({
     }
 
     loadOpportunity();
-  }, [params]);
+  }, [id]);
 
-  async function executeRecoveryAction() {
+  async function startRecoveryPayment() {
     if (!opportunity) return;
 
-    setExecuting(true);
+    setPaymentStarting(true);
     setActionMessage("");
 
     try {
       const response = await fetch(
-        `/api/opportunities/${opportunity.id}/recover`,
+        `/api/opportunities/${opportunity.id}/pay`,
         {
           method: "POST",
         }
@@ -136,37 +140,31 @@ export default function OpportunityDetailsPage({
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.error || "Failed to execute recovery action"
+          data.error ||
+            "Failed to initialize recovery payment"
         );
       }
 
-      setOpportunity((current) =>
-        current
-          ? {
-              ...current,
-              recoveryAction: current.recoveryAction
-                ? {
-                    ...current.recoveryAction,
-                    status: data.action.status,
-                    executedAt: data.action.executedAt,
-                  }
-                : null,
-            }
-          : current
-      );
+      if (!data.authorizationUrl) {
+        throw new Error(
+          "Paystack checkout URL was not returned"
+        );
+      }
 
-      setActionMessage(data.message);
+      window.location.href = data.authorizationUrl;
     } catch (error) {
       console.error(
-        "Recovery action failed:",
+        "Recovery payment initialization failed:",
         error
       );
 
       setActionMessage(
-        "Failed to execute recovery action. Please try again."
+        error instanceof Error
+          ? error.message
+          : "Failed to start recovery payment."
       );
-    } finally {
-      setExecuting(false);
+
+      setPaymentStarting(false);
     }
   }
 
@@ -208,8 +206,8 @@ export default function OpportunityDetailsPage({
       )
     : 0;
 
-  const actionCompleted =
-    opportunity.recoveryAction?.status === "COMPLETED";
+  const isRecovered =
+    opportunity.status === "RECOVERED";
 
   return (
     <div className="min-h-screen bg-gray-50 p-5 md:p-8">
@@ -499,70 +497,7 @@ export default function OpportunityDetailsPage({
               Recovery Action
             </h2>
           </div>
-                  {/* Recovery Timeline */}
-        <div className="mt-5 rounded-2xl border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={20} />
-            <h2 className="font-semibold">
-              Recovery Timeline
-            </h2>
-          </div>
 
-          {opportunity.activityLogs.length > 0 ? (
-            <div className="mt-6 space-y-6">
-              {opportunity.activityLogs.map(
-                (log, index) => (
-                  <div
-                    key={log.id}
-                    className="relative flex gap-4"
-                  >
-                    <div className="flex flex-col items-center">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                        <CheckCircle2 size={16} />
-                      </div>
-
-                      {index !==
-                        opportunity.activityLogs.length - 1 && (
-                        <div className="mt-2 h-full w-px bg-gray-200" />
-                      )}
-                    </div>
-
-                    <div className="pb-2">
-                      <p className="text-sm font-semibold">
-                        {formatStatus(
-                          log.action
-                        )}
-                      </p>
-
-                      {log.metadata?.note && (
-                        <p className="mt-1 text-sm text-gray-500">
-                          {log.metadata.note}
-                        </p>
-                      )}
-
-                      {log.metadata?.actionType && (
-                        <p className="mt-2 text-xs text-gray-400">
-                          Action:{" "}
-                          {formatStatus(
-                            log.metadata.actionType
-                          )}
-                        </p>
-                      )}
-
-                      <p className="mt-1 text-xs text-gray-400">
-                        {log.createdAt}
-                      </p>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          ) : (
-            <p className="mt-5 text-sm text-gray-500">
-              No recovery activity has been recorded yet.
-            </p>
-          )}
-        </div>
           {opportunity.recoveryAction ? (
             <div className="mt-5">
 
@@ -585,16 +520,10 @@ export default function OpportunityDetailsPage({
                     Action Status
                   </p>
 
-                  <p
-                    className={`mt-1 text-sm font-medium ${
-                      actionCompleted
-                        ? "text-green-600"
-                        : "text-amber-600"
-                    }`}
-                  >
-                    {formatStatus(
-                      opportunity.recoveryAction.status
-                    )}
+                  <p className="mt-1 text-sm font-medium text-gray-600">
+                    {isRecovered
+                      ? "PAYMENT RECOVERED"
+                      : "READY FOR PAYMENT"}
                   </p>
                 </div>
 
@@ -607,27 +536,12 @@ export default function OpportunityDetailsPage({
                     {
                       opportunity.recoveryAction
                         .message ??
-                      "No message created yet."
+                      "Retry your payment securely."
                     }
                   </p>
                 </div>
 
               </div>
-
-              {opportunity.recoveryAction.executedAt && (
-                <div className="mt-5">
-                  <p className="text-xs text-gray-400">
-                    Executed At
-                  </p>
-
-                  <p className="mt-1 text-sm text-gray-600">
-                    {
-                      opportunity.recoveryAction
-                        .executedAt
-                    }
-                  </p>
-                </div>
-              )}
 
             </div>
           ) : (
@@ -636,51 +550,129 @@ export default function OpportunityDetailsPage({
             </p>
           )}
 
-          {/* Action result message */}
+          {/* Payment result message */}
           {actionMessage && (
-            <div
-              className={`mt-5 rounded-xl p-4 text-sm ${
-                actionCompleted
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-              }`}
-            >
+            <div className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
               {actionMessage}
             </div>
           )}
 
-          {/* Execute action */}
+          {/* Paystack checkout button */}
           <div className="mt-6">
 
             <button
-              onClick={executeRecoveryAction}
+              onClick={startRecoveryPayment}
               disabled={
-                executing ||
-                actionCompleted ||
-                !opportunity.recoveryAction
+                paymentStarting ||
+                isRecovered
               }
               className={`rounded-xl px-5 py-3 text-sm font-medium text-white transition ${
-                actionCompleted
+                isRecovered
                   ? "bg-green-600 cursor-not-allowed"
-                  : executing
+                  : paymentStarting
                     ? "bg-indigo-400 cursor-wait"
                     : "bg-indigo-600 hover:bg-indigo-700"
               }`}
             >
-              {executing
-                ? "Executing..."
-                : actionCompleted
-                  ? "Action Executed"
-                  : "Take Recovery Action"}
+              {paymentStarting
+                ? "Opening Paystack..."
+                : isRecovered
+                  ? "Payment Recovered"
+                  : "Recover Payment"}
             </button>
 
             <p className="mt-2 text-xs text-gray-400">
-              This demo records the recovery action as
-              initiated. It does not confirm that payment
-              has been recovered.
+              This opens a secure Paystack checkout.
+              REVIVE will only mark this opportunity
+              as recovered after Paystack confirms
+              successful payment.
             </p>
 
           </div>
+
+        </div>
+
+        {/* Recovery Timeline */}
+        <div className="mt-5 rounded-2xl border bg-white p-6 shadow-sm">
+
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={20} />
+            <h2 className="font-semibold">
+              Recovery Timeline
+            </h2>
+          </div>
+
+          {opportunity.activityLogs.length > 0 ? (
+            <div className="mt-6 space-y-6">
+
+              {opportunity.activityLogs.map(
+                (log, index) => (
+                  <div
+                    key={log.id}
+                    className="relative flex gap-4"
+                  >
+
+                    <div className="flex flex-col items-center">
+
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                        <CheckCircle2 size={16} />
+                      </div>
+
+                      {index !==
+                        opportunity.activityLogs.length - 1 && (
+                        <div className="mt-2 h-full w-px bg-gray-200" />
+                      )}
+
+                    </div>
+
+                    <div className="pb-2">
+
+                      <p className="text-sm font-semibold">
+                        {formatStatus(
+                          log.action
+                        )}
+                      </p>
+
+                      {log.metadata?.note && (
+                        <p className="mt-1 text-sm text-gray-500">
+                          {log.metadata.note}
+                        </p>
+                      )}
+
+                      {log.metadata?.actionType && (
+                        <p className="mt-2 text-xs text-gray-400">
+                          Action:{" "}
+                          {formatStatus(
+                            log.metadata.actionType
+                          )}
+                        </p>
+                      )}
+
+                      {log.metadata?.amountAtRisk && (
+                        <p className="mt-2 text-xs text-gray-400">
+                          Amount:{" "}
+                          {formatAmount(
+                            log.metadata.amountAtRisk
+                          )}
+                        </p>
+                      )}
+
+                      <p className="mt-1 text-xs text-gray-400">
+                        {log.createdAt}
+                      </p>
+
+                    </div>
+
+                  </div>
+                )
+              )}
+
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-gray-500">
+              No recovery activity has been recorded yet.
+            </p>
+          )}
 
         </div>
 
