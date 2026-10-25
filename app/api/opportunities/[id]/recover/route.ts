@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/prisma/db";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -8,162 +12,70 @@ export async function POST(
   try {
     const { id } = await params;
     const opportunityId = Number(id);
-
-    if (Number.isNaN(opportunityId)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid opportunity ID",
-        },
-        { status: 400 }
-      );
+    if (!/^\d+$/.test(id) || !Number.isSafeInteger(opportunityId) || opportunityId <= 0 || opportunityId > 2147483647) {
+      return NextResponse.json({ success: false, error: "Invalid opportunity ID" }, { status: 400 });
     }
 
-    // Find the recovery case
-    const recoveryCases =
-      await db.orm.public.RecoveryCase.all();
+    const result = await db.transaction(async (tx) => {
+      // Serialize with the webhook, then read the current state under the lock.
+      await tx.query(db.raw.sql`
+        SELECT "id" FROM "public"."recoveryCase"
+        WHERE "id" = ${opportunityId} FOR UPDATE
+      `.returnsRow({ id: "pg/int4@1" }).build());
+      const recoveryCase = await tx.orm.public.RecoveryCase.where({ id: opportunityId }).first();
+      if (!recoveryCase) {
+        return { status: 404, body: { success: false, error: "Recovery opportunity not found" } };
+      }
+      if (recoveryCase.status === "RECOVERED") {
+        return { status: 409, body: { success: false, error: "Recovery case has already been recovered" } };
+      }
 
-    const recoveryCase = recoveryCases.find(
-      (item) => item.id === opportunityId
-    );
-
-    if (!recoveryCase) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Recovery opportunity not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Find the existing recovery action
-    const recoveryActions =
-      await db.orm.public.RecoveryAction.all();
-
-    const recoveryAction = recoveryActions.find(
-      (item) => item.recoveryCaseId === recoveryCase.id
-    );
-
-    if (!recoveryAction) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "No recovery action exists for this opportunity",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Prevent executing an already completed action
-    if (recoveryAction.status === "COMPLETED") {
-  const activityLogs =
-    await db.orm.public.ActivityLog.all();
-
-  const existingLog = activityLogs.find((log) => {
-    if (!log.metadata) return false;
-
-    const metadata = log.metadata as {
-      recoveryCaseId?: number;
-      recoveryActionId?: number;
-    };
-
-    return (
-      metadata.recoveryCaseId === recoveryCase.id &&
-      metadata.recoveryActionId === recoveryAction.id
-    );
-  });
-
-  let activityLog = existingLog;
-
-  if (!activityLog) {
-    activityLog =
-      await db.orm.public.ActivityLog.create({
-        businessId: recoveryCase.businessId,
-        userId: null,
-        action: "RECOVERY_ACTION_EXECUTED",
-        metadata: {
-          recoveryCaseId: recoveryCase.id,
-          recoveryActionId: recoveryAction.id,
-          actionType: recoveryAction.type,
-          amountAtRisk: recoveryCase.amountAtRisk,
-          note:
-            "REVIVE initiated the recovery action. Payment recovery has not yet been confirmed.",
-        },
-      });
-  }
-
-  return NextResponse.json({
-    success: true,
-    message: "Recovery action has already been executed.",
-    action: recoveryAction,
-    recoveryCase,
-    activityLog,
-  });
-}
-
-    /*
-     * Stage 8 is currently a demo-safe simulation.
-     *
-     * We are recording that REVIVE initiated the
-     * recommended recovery action.
-     *
-     * This does NOT mean the customer's payment
-     * has actually been recovered.
-     */
-    const executedAt = new Date().toISOString();
-
-    // 1. Mark the recovery action as completed
-    const updatedAction =
-      await db.orm.public.RecoveryAction
-        .where({ id: recoveryAction.id })
-        .update({
-          status: "COMPLETED",
-          executedAt,
+      const recoveryAction = await tx.orm.public.RecoveryAction.where({ recoveryCaseId: recoveryCase.id }).first();
+      if (!recoveryAction) {
+        return { status: 404, body: { success: false, error: "No recovery action exists for this opportunity" } };
+      }
+      const metadata = {
+        recoveryCaseId: recoveryCase.id,
+        recoveryActionId: recoveryAction.id,
+        actionType: recoveryAction.type,
+        amountAtRisk: recoveryCase.amountAtRisk,
+        note: "REVIVE initiated the recovery action. Payment recovery has not yet been confirmed.",
+      };
+      if (recoveryAction.status === "COMPLETED") {
+        const logs = await tx.orm.public.ActivityLog.where({ businessId: recoveryCase.businessId, action: "RECOVERY_ACTION_EXECUTED" }).all();
+        const existingLog = logs.find((log) => {
+          const value: unknown = log.metadata;
+          return isRecord(value) &&
+            value.recoveryCaseId === recoveryCase.id &&
+            value.recoveryActionId === recoveryAction.id;
         });
-
-    // 2. Move the recovery case into IN_PROGRESS
-    const updatedRecoveryCase =
-      await db.orm.public.RecoveryCase
-        .where({ id: recoveryCase.id })
-        .update({
-          status: "IN_PROGRESS",
+        const activityLog = existingLog ?? await tx.orm.public.ActivityLog.create({
+          businessId: recoveryCase.businessId, userId: null, action: "RECOVERY_ACTION_EXECUTED", metadata,
         });
+        return { status: 200, body: {
+          success: true, message: "Recovery action has already been executed.",
+          action: recoveryAction, recoveryCase, activityLog,
+        } };
+      }
 
-    // 3. Create an audit log
-    const activityLog =
-      await db.orm.public.ActivityLog.create({
-        businessId: recoveryCase.businessId,
-        userId: null,
-        action: "RECOVERY_ACTION_EXECUTED",
-        metadata: {
-          recoveryCaseId: recoveryCase.id,
-          recoveryActionId: recoveryAction.id,
-          actionType: recoveryAction.type,
-          amountAtRisk: recoveryCase.amountAtRisk,
-          note: "REVIVE initiated the recovery action. Payment recovery has not yet been confirmed.",
-        },
+      // Action execution is not payment confirmation. Commit these writes together.
+      const updatedAction = await tx.orm.public.RecoveryAction.where({ id: recoveryAction.id })
+        .update({ status: "COMPLETED", executedAt: new Date().toISOString() });
+      if (!updatedAction) throw new Error("Recovery action update returned no action");
+      const updatedRecoveryCase = await tx.orm.public.RecoveryCase.where({ id: recoveryCase.id })
+        .update({ status: "IN_PROGRESS" });
+      if (!updatedRecoveryCase) throw new Error("Recovery update returned no case");
+      const activityLog = await tx.orm.public.ActivityLog.create({
+        businessId: recoveryCase.businessId, userId: null, action: "RECOVERY_ACTION_EXECUTED", metadata,
       });
-
-    return NextResponse.json({
-      success: true,
-      message: "Recovery action executed successfully.",
-      action: updatedAction,
-      recoveryCase: updatedRecoveryCase,
-      activityLog,
+      return { status: 200, body: {
+        success: true, message: "Recovery action executed successfully.",
+        action: updatedAction, recoveryCase: updatedRecoveryCase, activityLog,
+      } };
     });
-  } catch (error) {
-    console.error(
-      "Recovery action execution error:",
-      error
-    );
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to execute recovery action",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json(result.body, { status: result.status });
+  } catch {
+    console.error("Recovery action execution failed");
+    return NextResponse.json({ success: false, error: "Failed to execute recovery action" }, { status: 500 });
   }
 }

@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "postinstall": "prisma skills sync || exit 0",
-    "contract:emit": "prisma contract emit"
+    "contract:emit": "prisma contract emit",
+    "test:payments": "node --test tests/paystack-*.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",

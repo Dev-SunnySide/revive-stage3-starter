@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   CheckCircle2,
@@ -225,12 +226,12 @@ export function Dashboard() {
               Top Recovery Opportunities
             </h2>
 
-            <a
+            <Link
               className="text-xs text-indigo-600"
               href="/opportunities"
             >
               View all
-            </a>
+            </Link>
           </div>
 
           <div className="mt-4 divide-y">
