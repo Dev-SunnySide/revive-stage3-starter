@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/prisma/db";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
+import { bindingError, isRecord, paymentEnvironment, paymentError, validReference } from "@/src/payments/attempt";
 
 function matchesId(value: unknown, expected: number | null) {
   return value === expected || (expected !== null && value === String(expected));
@@ -13,133 +10,78 @@ function reject(error: string, status: number) {
   return NextResponse.json({ success: false, paymentSuccessful: false, error }, { status });
 }
 
+// Verification reports provider evidence only. It never updates attempts,
+// recovery cases, audit records, or legacy records.
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ reference: string }> }
+  { params }: { params: Promise<{ reference: string }> },
 ) {
   try {
     const { reference } = await params;
-    const match = /^REVIVE-([1-9]\d*)-(\d+)$/.exec(reference);
-    const recoveryCaseId = match ? Number(match[1]) : NaN;
-    if (!Number.isSafeInteger(recoveryCaseId) || recoveryCaseId <= 0 || recoveryCaseId > 2147483647) {
-      return reject("Invalid REVIVE recovery reference", 400);
-    }
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) return reject("Paystack secret key is not configured", 500);
+    if (!validReference(reference)) return reject("Invalid REVIVE recovery reference", 400);
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    const environment = secret ? paymentEnvironment(secret) : null;
+    if (!secret || !environment) return reject("Paystack environment is not configured", 500);
 
-    const recoveryCase = await db.orm.public.RecoveryCase.where({ id: recoveryCaseId }).first();
+    const attempt = await db.orm.public.RecoveryPaymentAttempt.where({ reference }).first();
+    if (!attempt) return reject("No persisted payment attempt; legacy payment requires manual review", 409);
+    const recoveryCase = await db.orm.public.RecoveryCase.where({ id: attempt.recoveryCaseId }).first();
     if (!recoveryCase) return reject("Recovery case not found", 404);
+    const binding = bindingError(attempt, recoveryCase, environment);
+    if (binding) return reject(binding, 409);
     const originalTransaction = await db.orm.public.Transaction.where({ id: recoveryCase.transactionId }).first();
-    if (!originalTransaction || originalTransaction.businessId !== recoveryCase.businessId ||
-      (recoveryCase.customerId !== null && originalTransaction.customerId !== null &&
-        originalTransaction.customerId !== recoveryCase.customerId)) {
+    if (!originalTransaction || originalTransaction.businessId !== attempt.businessId ||
+      originalTransaction.currency !== attempt.expectedCurrency ||
+      (attempt.customerId !== null && originalTransaction.customerId !== null &&
+        originalTransaction.customerId !== attempt.customerId)) {
       return reject("Recovery case transaction binding is inconsistent", 409);
     }
 
-    const paystackResponse = await fetch(
-      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${secretKey}` },
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000),
-      }
-    );
-    const provider: unknown = await paystackResponse.json();
-    if (!paystackResponse.ok || !isRecord(provider) || provider.status !== true || !isRecord(provider.data)) {
-      console.error("Paystack verification failed", { status: paystackResponse.status });
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+      method: "GET", headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store", signal: AbortSignal.timeout(10000),
+    });
+    const provider: unknown = await response.json();
+    if (!response.ok || !isRecord(provider) || provider.status !== true || !isRecord(provider.data)) {
       return reject("Failed to verify Paystack transaction", 502);
     }
     const transaction = provider.data;
-    if (transaction.reference !== reference) return reject("Paystack transaction reference does not match request", 409);
-    if (typeof transaction.status !== "string" || !transaction.status) {
-      return reject("Invalid Paystack transaction status", 502);
-    }
-    if (typeof transaction.amount !== "number" || !Number.isSafeInteger(transaction.amount) || transaction.amount <= 0 ||
-      transaction.amount !== recoveryCase.amountAtRisk) {
-      return reject("Payment amount does not match recovery amount", 409);
-    }
-    // Recovery initialization currently supports NGN. Read its expected currency
-    // from the original transaction instead of trusting the provider response.
-    if (originalTransaction.currency !== "NGN" || transaction.currency !== originalTransaction.currency) {
-      return reject("Payment currency does not match recovery currency", 409);
-    }
+    if (typeof transaction.status !== "string" || !transaction.status) return reject("Invalid Paystack transaction status", 502);
+    const error = paymentError(attempt, transaction);
+    if (error) return reject(error, 409);
 
-    let metadata: unknown = transaction.metadata;
-    if (typeof metadata === "string" && metadata !== "") {
-      try { metadata = JSON.parse(metadata); }
-      catch { return reject("Invalid Paystack recovery metadata", 409); }
-    }
-    if (metadata != null && metadata !== "" && !isRecord(metadata)) {
-      return reject("Invalid Paystack recovery metadata", 409);
-    }
-    let providerMetadataChecked = false;
-    if (isRecord(metadata)) {
-      for (const [key, expected] of [
-        ["recoveryCaseId", recoveryCase.id],
-        ["businessId", recoveryCase.businessId],
-        ["customerId", recoveryCase.customerId],
-      ] as const) {
-        if (Object.hasOwn(metadata, key)) {
-          providerMetadataChecked = true;
-          if (!matchesId(metadata[key], expected)) return reject("Paystack recovery metadata does not match case", 409);
-        }
-      }
-      if (Object.hasOwn(metadata, "source") && metadata.source !== "REVIVE") {
-        return reject("Unexpected Paystack recovery source", 409);
-      }
-    }
-
-    // This schema has no initialized recovery-payment reference. Only validate
-    // exact-reference evidence if it already exists; never create or infer it.
+    // Preserve Phase 1 checks on any pre-existing exact-reference evidence.
     const storedTransaction = await db.orm.public.Transaction.where({ reference }).first();
     if (storedTransaction && (storedTransaction.id !== recoveryCase.transactionId ||
-      storedTransaction.businessId !== recoveryCase.businessId ||
-      storedTransaction.amount !== transaction.amount || storedTransaction.currency !== transaction.currency)) {
+      storedTransaction.businessId !== attempt.businessId ||
+      storedTransaction.amount !== attempt.expectedAmount || storedTransaction.currency !== attempt.expectedCurrency)) {
       return reject("Stored payment transaction does not match recovery case", 409);
     }
-    const recoveryLogs = await db.orm.public.ActivityLog.where({ action: "PAYMENT_RECOVERED" }).all();
-    const matchingLogs = recoveryLogs.filter(log => isRecord(log.metadata) && log.metadata.reference === reference);
+    const logs = await db.orm.public.ActivityLog.where({ action: "PAYMENT_RECOVERED" }).all();
+    const matchingLogs = logs.filter(log => isRecord(log.metadata) && log.metadata.reference === reference);
     for (const log of matchingLogs) {
       const value = log.metadata;
-      if (!isRecord(value) || log.businessId !== recoveryCase.businessId ||
-        !matchesId(value.recoveryCaseId, recoveryCase.id) ||
-        (Object.hasOwn(value, "amount") && value.amount !== transaction.amount) ||
-        (Object.hasOwn(value, "currency") && value.currency !== transaction.currency) ||
+      if (!isRecord(value) || log.businessId !== attempt.businessId || !matchesId(value.recoveryCaseId, attempt.recoveryCaseId) ||
+        (Object.hasOwn(value, "paymentAttemptId") && !matchesId(value.paymentAttemptId, attempt.id)) ||
+        (Object.hasOwn(value, "environment") && value.environment !== attempt.environment) ||
+        (Object.hasOwn(value, "amount") && value.amount !== attempt.expectedAmount) ||
+        (Object.hasOwn(value, "currency") && value.currency !== attempt.expectedCurrency) ||
         (Object.hasOwn(value, "paymentStatus") && value.paymentStatus !== "success")) {
         return reject("Stored recovery audit does not match payment", 409);
       }
     }
-
     const paymentSuccessful = transaction.status === "success";
     return NextResponse.json({
-      success: true,
-      paymentSuccessful,
-      payment: {
-        status: transaction.status,
-        reference: transaction.reference,
-        amount: transaction.amount,
-        currency: transaction.currency,
+      success: true, paymentSuccessful,
+      payment: { status: transaction.status, reference, amount: transaction.amount, currency: transaction.currency,
         paidAt: typeof transaction.paid_at === "string" ? transaction.paid_at : null,
-        gatewayResponse: typeof transaction.gateway_response === "string" ? transaction.gateway_response : null,
-      },
-      recoveryCase: {
-        id: recoveryCase.id,
-        status: recoveryCase.status,
-        amountAtRisk: recoveryCase.amountAtRisk,
-        recoveredAmount: recoveryCase.recoveredAmount,
-      },
-      validation: {
-        referenceMatches: true,
-        statusSuccessful: paymentSuccessful,
-        amountMatches: true,
-        currencyMatches: true,
-        caseAssociation: "reference_case_id",
-        providerMetadataChecked,
-        storedPaymentBinding: matchingLogs.length > 0 ? "recovery_audit_log" : storedTransaction ? "transaction" : null,
-        initializedPaymentBindingStored: false,
-        expectedAmountSource: "current_recovery_case",
-      },
+        gatewayResponse: typeof transaction.gateway_response === "string" ? transaction.gateway_response : null },
+      recoveryCase: { id: recoveryCase.id, status: recoveryCase.status, amountAtRisk: recoveryCase.amountAtRisk, recoveredAmount: recoveryCase.recoveredAmount },
+      attempt: { id: attempt.id, status: attempt.status, environment: attempt.environment },
+      validation: { referenceMatches: true, statusSuccessful: paymentSuccessful, amountMatches: true, currencyMatches: true,
+        environmentMatches: true, caseAssociation: "persisted_payment_attempt",
+        storedPaymentBinding: "payment_attempt", initializedPaymentBindingStored: true, expectedAmountSource: "payment_attempt",
+        recoveryAuditPresent: matchingLogs.length > 0, originalTransactionReferenceMatches: storedTransaction !== null },
     });
   } catch {
     console.error("Paystack transaction verification failed");

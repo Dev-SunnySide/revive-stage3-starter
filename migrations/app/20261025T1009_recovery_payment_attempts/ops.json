@@ -1,0 +1,401 @@
+[
+  {
+    "id": "table.recoveryPaymentAttempt",
+    "label": "Create table \"recoveryPaymentAttempt\"",
+    "summary": "Creates table \"recoveryPaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"recoveryPaymentAttempt\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"recoveryPaymentAttempt\"",
+        "sql": "CREATE TABLE \"public\".\"recoveryPaymentAttempt\" (\n  \"accessCode\" text,\n  \"authorizationUrl\" text,\n  \"businessId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"customerId\" int4,\n  \"environment\" text NOT NULL,\n  \"expectedAmount\" int4 NOT NULL,\n  \"expectedCurrency\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"initializedAt\" timestamptz,\n  \"lastCheckedAt\" timestamptz,\n  \"providerTransactionId\" text,\n  \"recoveryCaseId\" int4 NOT NULL,\n  \"reference\" text NOT NULL,\n  \"status\" text DEFAULT 'INITIALIZING' NOT NULL,\n  \"succeededAt\" timestamptz,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"attempt_positive_amount_62ceb3db\" CHECK (\"expectedAmount\" > 0),\n  CONSTRAINT \"attempt_supported_currency_052e0d54\" CHECK (\"expectedCurrency\" = 'NGN'),\n  CONSTRAINT \"recoveryPaymentAttempt_environment_check_fa07de53\" CHECK (\"environment\" IN ('test', 'live')),\n  CONSTRAINT \"recoveryPaymentAttempt_status_check_064f6f30\" CHECK (\"status\" IN ('INITIALIZING', 'READY', 'UNKNOWN', 'RECONCILIATION_REQUIRED', 'SUCCEEDED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"recoveryPaymentAttempt\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.recoveryCase.recoveryCase_id_businessId_key",
+    "label": "Add unique constraint on \"recoveryCase\" (id, businessId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "recoveryCase_id_businessId_key",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"recoveryCase_id_businessId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_id_businessId_key",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"recoveryCase_id_businessId_key\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryCase\" ADD CONSTRAINT \"recoveryCase_id_businessId_key\" UNIQUE (\"id\", \"businessId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"recoveryCase_id_businessId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_id_businessId_key",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.recoveryPaymentAttempt.recoveryPaymentAttempt_reference_key",
+    "label": "Add unique constraint on \"recoveryPaymentAttempt\" (reference)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "recoveryPaymentAttempt_reference_key",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"recoveryPaymentAttempt_reference_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_reference_key",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"recoveryPaymentAttempt_reference_key\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryPaymentAttempt\" ADD CONSTRAINT \"recoveryPaymentAttempt_reference_key\" UNIQUE (\"reference\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"recoveryPaymentAttempt_reference_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_reference_key",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.recoveryPaymentAttempt.recoveryPaymentAttempt_recoveryCaseId_environment_key",
+    "label": "Add unique constraint on \"recoveryPaymentAttempt\" (recoveryCaseId, environment)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "recoveryPaymentAttempt_recoveryCaseId_environment_key",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"recoveryPaymentAttempt_recoveryCaseId_environment_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_recoveryCaseId_environment_key",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"recoveryPaymentAttempt_recoveryCaseId_environment_key\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryPaymentAttempt\" ADD CONSTRAINT \"recoveryPaymentAttempt_recoveryCaseId_environment_key\" UNIQUE (\"recoveryCaseId\", \"environment\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"recoveryPaymentAttempt_recoveryCaseId_environment_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_recoveryCaseId_environment_key",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.recoveryPaymentAttempt.recoveryPaymentAttempt_environment_providerTransactionId_key",
+    "label": "Add unique constraint on \"recoveryPaymentAttempt\" (environment, providerTransactionId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "recoveryPaymentAttempt_environment_providerTransactionId_key",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"recoveryPaymentAttempt_environment_providerTransactionId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_environment_providerTransactionId_key",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"recoveryPaymentAttempt_environment_providerTransactionId_key\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryPaymentAttempt\" ADD CONSTRAINT \"recoveryPaymentAttempt_environment_providerTransactionId_key\" UNIQUE (\"environment\", \"providerTransactionId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"recoveryPaymentAttempt_environment_providerTransactionId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_environment_providerTransactionId_key",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.recoveryPaymentAttempt.recoveryPaymentAttempt_businessId_idx_ae0ed511",
+    "label": "Create index \"recoveryPaymentAttempt_businessId_idx_ae0ed511\" on \"recoveryPaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "recoveryPaymentAttempt_businessId_idx_ae0ed511",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"recoveryPaymentAttempt_businessId_idx_ae0ed511\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryPaymentAttempt_businessId_idx_ae0ed511\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"recoveryPaymentAttempt_businessId_idx_ae0ed511\"",
+        "sql": "CREATE INDEX \"recoveryPaymentAttempt_businessId_idx_ae0ed511\" ON \"public\".\"recoveryPaymentAttempt\" (\"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"recoveryPaymentAttempt_businessId_idx_ae0ed511\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryPaymentAttempt_businessId_idx_ae0ed511\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.recoveryPaymentAttempt.recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8",
+    "label": "Create index \"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\" on \"recoveryPaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\"",
+        "sql": "CREATE INDEX \"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\" ON \"public\".\"recoveryPaymentAttempt\" (\"recoveryCaseId\", \"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.recoveryPaymentAttempt.recoveryPaymentAttempt_recoveryCaseId_businessId_fkey",
+    "label": "Add foreign key \"recoveryPaymentAttempt_recoveryCaseId_businessId_fkey\" on \"recoveryPaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "recoveryPaymentAttempt_recoveryCaseId_businessId_fkey",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"recoveryPaymentAttempt_recoveryCaseId_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_recoveryCaseId_businessId_fkey",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"recoveryPaymentAttempt_recoveryCaseId_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryPaymentAttempt\"\nADD CONSTRAINT \"recoveryPaymentAttempt_recoveryCaseId_businessId_fkey\"\nFOREIGN KEY (\"recoveryCaseId\", \"businessId\")\nREFERENCES \"public\".\"recoveryCase\" (\"id\", \"businessId\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"recoveryPaymentAttempt_recoveryCaseId_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_recoveryCaseId_businessId_fkey",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.recoveryPaymentAttempt.recoveryPaymentAttempt_businessId_fkey",
+    "label": "Add foreign key \"recoveryPaymentAttempt_businessId_fkey\" on \"recoveryPaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "recoveryPaymentAttempt_businessId_fkey",
+        "table": "recoveryPaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"recoveryPaymentAttempt_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_businessId_fkey",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"recoveryPaymentAttempt_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryPaymentAttempt\"\nADD CONSTRAINT \"recoveryPaymentAttempt_businessId_fkey\"\nFOREIGN KEY (\"businessId\")\nREFERENCES \"public\".\"business\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"recoveryPaymentAttempt_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryPaymentAttempt_businessId_fkey",
+          "public",
+          "\"public\".\"recoveryPaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "guard.recoveryPaymentAttempt.immutable_binding",
+    "label": "Protect immutable payment bindings and retained payment evidence",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "guard does not already exist",
+        "sql": "SELECT to_regprocedure('public.revive_attempt_binding_guard()') IS NULL AS result"
+      }
+    ],
+    "execute": [
+      {
+        "description": "create immutable binding guard",
+        "sql": "\nCREATE FUNCTION public.revive_attempt_binding_guard() RETURNS trigger\nLANGUAGE plpgsql SET search_path = pg_catalog AS $guard$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'Payment attempt evidence cannot be deleted';\n  END IF;\n  IF ROW(NEW.\"id\", NEW.\"reference\", NEW.\"recoveryCaseId\", NEW.\"businessId\", NEW.\"customerId\",\n         NEW.\"expectedAmount\", NEW.\"expectedCurrency\", NEW.\"environment\", NEW.\"createdAt\")\n     IS DISTINCT FROM\n     ROW(OLD.\"id\", OLD.\"reference\", OLD.\"recoveryCaseId\", OLD.\"businessId\", OLD.\"customerId\",\n         OLD.\"expectedAmount\", OLD.\"expectedCurrency\", OLD.\"environment\", OLD.\"createdAt\") THEN\n    RAISE EXCEPTION 'Payment attempt binding and expectations are immutable';\n  END IF;\n  IF OLD.\"providerTransactionId\" IS NOT NULL AND NEW.\"providerTransactionId\" IS DISTINCT FROM OLD.\"providerTransactionId\" THEN\n    RAISE EXCEPTION 'Provider transaction identity is immutable once recorded';\n  END IF;\n  IF OLD.\"status\" = 'SUCCEEDED' AND NEW.\"status\" <> 'SUCCEEDED' THEN\n    RAISE EXCEPTION 'A successful payment attempt cannot be reopened';\n  END IF;\n  RETURN NEW;\nEND;\n$guard$"
+      },
+      {
+        "description": "attach immutable binding guard",
+        "sql": "\nCREATE TRIGGER revive_attempt_binding_guard\nBEFORE UPDATE OR DELETE ON public.\"recoveryPaymentAttempt\"\nFOR EACH ROW EXECUTE FUNCTION public.revive_attempt_binding_guard()"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "guard is attached and enabled",
+        "sql": "\nSELECT EXISTS (SELECT 1 FROM pg_trigger\nWHERE tgrelid = 'public.\"recoveryPaymentAttempt\"'::regclass\nAND tgname = 'revive_attempt_binding_guard' AND tgenabled = 'O'\nAND tgfoid = 'public.revive_attempt_binding_guard()'::regprocedure) AS result"
+      }
+    ]
+  }
+]

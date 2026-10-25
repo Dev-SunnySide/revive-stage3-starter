@@ -30,6 +30,19 @@ enum ActionType {
   MANUAL
 }
 
+enum PaymentEnvironment {
+  test
+  live
+}
+
+enum PaymentAttemptStatus {
+  INITIALIZING
+  READY
+  UNKNOWN
+  RECONCILIATION_REQUIRED
+  SUCCEEDED
+}
+
 model User {
   id         Int                        @id @default(autoincrement())
   email      String                     @unique
@@ -55,6 +68,7 @@ model Business {
   transactions  Transaction[]
   recoveryCases RecoveryCase[]
   activities    ActivityLog[]
+  paymentAttempts RecoveryPaymentAttempt[]
 }
 
 model BusinessMember {
@@ -115,6 +129,37 @@ model RecoveryCase {
 
   recommendations AIRecommendation[]
   actions         RecoveryAction[]
+  paymentAttempts RecoveryPaymentAttempt[]
+
+  @@unique([id, businessId])
+}
+
+model RecoveryPaymentAttempt {
+  id                    Int                  @id @default(autoincrement())
+  reference             String               @unique
+  recoveryCaseId        Int
+  businessId            Int
+  recoveryCase          RecoveryCase         @relation(fields:[recoveryCaseId, businessId], references:[id, businessId], onDelete: Restrict, onUpdate: Restrict)
+  business              Business             @relation(fields:[businessId], references:[id], onDelete: Restrict, onUpdate: Restrict)
+  customerId            Int?
+  expectedAmount        Int
+  expectedCurrency      String
+  environment           PaymentEnvironment
+  status                PaymentAttemptStatus @default(INITIALIZING)
+  authorizationUrl      String?
+  accessCode            String?
+  providerTransactionId String?
+  createdAt             TimestamptzString     @default(now())
+  updatedAt             temporal.updatedAtString()
+  initializedAt         TimestamptzString?
+  lastCheckedAt         TimestamptzString?
+  succeededAt           TimestamptzString?
+
+  // Conservative policy: never automatically replace an ambiguous payment.
+  @@unique([recoveryCaseId, environment])
+  @@unique([environment, providerTransactionId])
+  @@check(expression: "\"expectedAmount\" > 0", name: "attempt_positive_amount")
+  @@check(expression: "\"expectedCurrency\" = 'NGN'", name: "attempt_supported_currency")
 }
 
 model AIRecommendation {

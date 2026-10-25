@@ -16,14 +16,22 @@ const contractJson = JSON.parse(fs.readFileSync(new URL("../src/prisma/contract.
 // Use the installed Prisma builder to exercise the real lock-plan construction.
 // This lazy client only builds plans; it is never connected or queried.
 const planClient = postgres({ contractJson, url: "postgresql://unused:unused@127.0.0.1:1/unused" });
-const secret = "synthetic-test-secret";
+const secret = "sk_test_synthetic-test-secret";
 const reference = "REVIVE-1-1790444568278";
-const payment = { reference, amount: 1500000, currency: "NGN", status: "success", paid_at: "2026-09-26T17:45:39.000Z" };
+const payment = { reference, amount: 1500000, currency: "NGN", status: "success", domain: "test", id: 12345, paid_at: "2026-09-26T17:45:39.000Z" };
+
+const helperModule = { exports: {} };
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL("../src/payments/attempt.ts", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: helperModule.exports, URL });
 
 function harness(options = {}) {
   let state = {
-    row: options.missingCase ? null : { id: 1, businessId: 1, status: options.recovered ? "RECOVERED" : "ACTION_REQUIRED", amountAtRisk: 1500000, recoveredAmount: options.recovered ? 1500000 : 0, recoveredAt: null },
+    row: options.missingCase ? null : { id: 1, businessId: 1, customerId: 1, status: options.recovered ? "RECOVERED" : "ACTION_REQUIRED", amountAtRisk: 1500000, recoveredAmount: options.recovered ? 1500000 : 0, recoveredAt: null },
     logs: [],
+    attempt: { id: 1, reference, recoveryCaseId: 1, businessId: 1, customerId: 1, expectedAmount: payment.amount,
+      expectedCurrency: "NGN", environment: "test", status: options.recovered ? "SUCCEEDED" : "READY",
+      providerTransactionId: null },
   };
   let tail = Promise.resolve();
   let transactions = 0, updates = 0, rollbacks = 0, locks = 0;
@@ -31,7 +39,10 @@ function harness(options = {}) {
   const diagnostics = [];
   const db = {
     raw: planClient.raw,
-    get orm() { throw new Error("Root ORM must not be used outside the transaction"); },
+    orm: { public: { RecoveryPaymentAttempt: { where(filter) {
+      assert.deepEqual(JSON.parse(JSON.stringify(filter)), { reference });
+      return { first: async () => structuredClone(state.attempt) };
+    } } } },
     async transaction(callback) {
       transactions++;
       let release, pending, locked = false;
@@ -52,6 +63,10 @@ function harness(options = {}) {
           return pending.row ? [{ id: pending.row.id }] : [];
         },
         orm: { public: {
+          RecoveryPaymentAttempt: { where() { return {
+            async first() { requireLock(); return structuredClone(pending.attempt); },
+            async update(values) { requireLock(); Object.assign(pending.attempt, values); return structuredClone(pending.attempt); },
+          }; } },
           RecoveryCase: {
             where(filter) {
               assert.deepEqual(JSON.parse(JSON.stringify(filter)), { id: 1 });
@@ -96,6 +111,7 @@ function harness(options = {}) {
     console: Object.fromEntries(["info", "warn", "error"].map(level => [level, (...args) => diagnostics.push(args)])),
     require(name) {
       if (name === "crypto") return crypto;
+      if (name === "@/src/payments/attempt") return helperModule.exports;
       if (name === "@/src/prisma/db") return { db };
       if (name === "next/server") return { NextResponse: { json: (body, init) => new Response(JSON.stringify(body), { status: init?.status ?? 200 }) } };
       throw new Error("Unexpected route import");

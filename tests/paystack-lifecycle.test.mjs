@@ -21,12 +21,22 @@ const compiled = Object.fromEntries(Object.entries(paths).map(([name, path]) => 
 ]));
 const contractJson = JSON.parse(fs.readFileSync(new URL("../src/prisma/contract.json", import.meta.url), "utf8"));
 const planClient = postgres({ contractJson, url: "postgresql://unused:unused@127.0.0.1:1/unused" });
-const secret = "synthetic-lifecycle-test-key";
+const secret = "sk_test_synthetic-lifecycle-test-key";
 const reference = "REVIVE-1-1790444568278";
-const payment = { reference, status: "success", amount: 1500000, currency: "NGN", paid_at: "2026-09-26T17:45:39Z" };
+const payment = { reference, status: "success", amount: 1500000, currency: "NGN", domain: "test", id: 12345, paid_at: "2026-09-26T17:45:39Z" };
 const recoveryLog = { id: 3, businessId: 1, action: "PAYMENT_RECOVERED", metadata: {
   recoveryCaseId: 1, reference, amount: 1500000, currency: "NGN", paymentStatus: "success",
 } };
+
+const helperModule = { exports: {} };
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL("../src/payments/attempt.ts", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: helperModule.exports, URL });
+const fixtureAttempt = { id: 1, reference, recoveryCaseId: 1, businessId: 1, customerId: 1,
+  expectedAmount: 1500000, expectedCurrency: "NGN", environment: "test", status: "READY",
+  authorizationUrl: "https://checkout.paystack.com/mock", accessCode: "mock-access-code", providerTransactionId: null,
+  createdAt: "2026-09-26T17:00:00Z", updatedAt: "2026-09-26T17:00:00Z", initializedAt: null,
+  lastCheckedAt: null, succeededAt: null };
 
 function deferred() {
   let resolve;
@@ -35,6 +45,7 @@ function deferred() {
 }
 
 function harness(options = {}) {
+  const currentSecret = options.secret ?? secret;
   let state = {
     RecoveryCase: [{ id: 1, businessId: 1, customerId: 1, transactionId: 1,
       status: options.recovered ? "RECOVERED" : "ACTION_REQUIRED", amountAtRisk: 1500000,
@@ -45,6 +56,7 @@ function harness(options = {}) {
       currency: "NGN", status: "FAILED", ...options.originalFields }, ...(options.extraTransactions ?? [])],
     RecoveryAction: [{ id: 1, recoveryCaseId: 1, type: "PAYMENT_LINK", status: "PENDING", ...options.actionFields }],
     ActivityLog: structuredClone(options.logs ?? []),
+    RecoveryPaymentAttempt: options.noAttempt ? [] : [{ ...fixtureAttempt, ...options.attemptFields }],
   };
   if (options.missingCase) state.RecoveryCase = [];
   if (options.missingAction) state.RecoveryAction = [];
@@ -61,6 +73,12 @@ function harness(options = {}) {
           all: async () => structuredClone(rows()),
           update: async values => {
             guard(true); updates++;
+            if (options.failAttemptUpdate && model === "RecoveryPaymentAttempt") throw new Error("PRIVATE_DATABASE_ERROR");
+            if (model === "RecoveryPaymentAttempt") {
+              for (const key of ["reference", "recoveryCaseId", "businessId", "customerId", "expectedAmount", "expectedCurrency", "environment"]) {
+                assert.ok(!Object.hasOwn(values, key), "Attempt expectations must never be updated");
+              }
+            }
             const row = rows()[0];
             if (!row) return null;
             Object.assign(row, values);
@@ -70,8 +88,13 @@ function harness(options = {}) {
       },
       create: async values => {
         guard(true); inserts++;
+        if (options.failAttemptCreate && model === "RecoveryPaymentAttempt") throw new Error("PRIVATE_DATABASE_ERROR");
         if (options.failAudit && model === "ActivityLog") throw new Error("PRIVATE_DATABASE_ERROR");
-        const row = { id: getState()[model].length + 1, ...structuredClone(values) };
+        if (model === "RecoveryPaymentAttempt") {
+          assert.ok(!getState()[model].some(row => row.reference === values.reference ||
+            (row.recoveryCaseId === values.recoveryCaseId && row.environment === values.environment)));
+        }
+        const row = { id: getState()[model].length + 1, createdAt: new Date().toISOString(), ...structuredClone(values) };
         getState()[model].push(row);
         return structuredClone(row);
       },
@@ -120,17 +143,18 @@ function harness(options = {}) {
       options.initializationStarted?.resolve();
       if (options.initializationRelease) await options.initializationRelease.promise;
       if (options.initializationFailure) throw new Error("PRIVATE_PROVIDER_ERROR");
-      return new Response(JSON.stringify({ status: true, data: {
-        reference: body.reference, authorization_url: "https://checkout.paystack.com/mock", access_code: "mock-access-code",
-      } }));
+      return new Response(JSON.stringify(options.initializationEnvelope ?? { status: true, data: {
+        reference: options.initializationWrongReference ? "REVIVE-2-123" : body.reference, authorization_url: "https://checkout.paystack.com/mock", access_code: "mock-access-code",
+      } }), { status: options.initializationHttpStatus ?? 200 });
     }
-    assert.equal(url, "https://api.paystack.co/transaction/verify/" + reference);
+    const requestedReference = decodeURIComponent(url.split("/").at(-1));
+    assert.ok(state.RecoveryPaymentAttempt.some(row => row.reference === requestedReference));
     assert.equal(init.method, "GET");
     assert.equal(init.cache, "no-store");
     verifications++;
     if (options.verificationFailure) throw new Error("PRIVATE_PROVIDER_ERROR");
     return new Response(options.invalidProviderJson ? "{" : JSON.stringify(
-      options.providerEnvelope ?? { status: true, data: { ...payment, ...options.providerFields } }
+      options.providerEnvelope ?? { status: true, data: { ...payment, reference: requestedReference, ...options.providerFields } }
     ), { status: options.providerHttpStatus ?? 200 });
   }
   const routes = Object.fromEntries(Object.entries(compiled).map(([name, code]) => {
@@ -138,10 +162,11 @@ function harness(options = {}) {
     vm.runInNewContext(code, {
       module: routeModule, exports: routeModule.exports, Buffer, AbortSignal,
       fetch: fetchMock,
-      process: { env: { PAYSTACK_SECRET_KEY: options.noSecret ? undefined : secret } },
+      process: { env: { PAYSTACK_SECRET_KEY: options.noSecret ? undefined : currentSecret } },
       console: Object.fromEntries(["info", "warn", "error"].map(level => [level, (...args) => diagnostics.push(args)])),
       require(id) {
         if (id === "crypto") return crypto;
+        if (id === "@/src/payments/attempt") return helperModule.exports;
         if (id === "@/src/prisma/db") return { db };
         if (id === "next/server") return { NextResponse: { json: (body, init) => new Response(JSON.stringify(body), { status: init?.status ?? 200 }) } };
         throw new Error("Unexpected import");
@@ -153,9 +178,9 @@ function harness(options = {}) {
     async call(route, value = route === "verify" ? reference : "1") {
       let request, response;
       if (route === "webhook") {
-        const body = JSON.stringify({ event: "charge.success", data: payment });
+        const body = JSON.stringify({ event: "charge.success", data: { ...payment, reference: options.noAttempt && state.RecoveryPaymentAttempt.length ? state.RecoveryPaymentAttempt[0].reference : reference, ...options.webhookFields } });
         request = new Request("http://mock/api/paystack/webhook", { method: "POST", body,
-          headers: { "x-paystack-signature": crypto.createHmac("sha512", secret).update(body).digest("hex") } });
+          headers: { "x-paystack-signature": crypto.createHmac("sha512", currentSecret).update(body).digest("hex") } });
         response = await routes.webhook.POST(request);
       } else {
         request = new Request("http://mock/", { method: route === "verify" ? "GET" : "POST" });
@@ -164,7 +189,7 @@ function harness(options = {}) {
         });
       }
       const logged = JSON.stringify(diagnostics);
-      assert.ok(!logged.includes(secret) && !logged.includes("PRIVATE_DATABASE_ERROR") && !logged.includes("PRIVATE_PROVIDER_ERROR"));
+      assert.ok(!logged.includes(currentSecret) && !logged.includes("PRIVATE_DATABASE_ERROR") && !logged.includes("PRIVATE_PROVIDER_ERROR"));
       return { status: response.status, body: await response.json() };
     },
     state: () => structuredClone(state),
@@ -252,39 +277,42 @@ test("completed unrecovered action preserves missing-audit repair without reopen
 });
 
 test("pay preserves legitimate checkout initialization without recovery writes", async () => {
-  const h = harness();
+  const h = harness({ noAttempt: true });
   const before = h.state();
   const result = await h.call("pay");
   assert.equal(result.status, 200);
-  assert.match(result.body.reference, /^REVIVE-1-\d+$/);
+  assert.match(result.body.reference, /^REVIVE-1-[0-9a-f-]{36}$/);
   assert.equal(result.body.authorizationUrl, "https://checkout.paystack.com/mock");
   assert.equal(h.counts().initializations, 1);
-  assert.deepEqual(h.state(), before);
+  assert.equal(h.state().RecoveryPaymentAttempt.length, 1);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "READY");
+  assert.deepEqual({ ...h.state(), RecoveryPaymentAttempt: [] }, before);
 });
 
-test("pay holds the case lock through initialization; webhook subsequently recovers", async () => {
+test("pay commits reservation before initialization; webhook can recover while provider is in flight", async () => {
   const started = deferred(), release = deferred();
-  const h = harness({ initializationStarted: started, initializationRelease: release });
+  const h = harness({ noAttempt: true, initializationStarted: started, initializationRelease: release });
   const checkout = h.call("pay");
   await started.promise;
   const webhook = h.call("webhook");
   assert.equal(h.counts().locks, 1);
-  release.resolve();
-  assert.equal((await checkout).status, 200);
   assert.equal((await webhook).status, 200);
+  release.resolve();
+  assert.equal((await checkout).status, 409);
   assert.equal(h.state().RecoveryCase[0].status, "RECOVERED");
   assert.equal(h.counts().initializations, 1);
 });
 
 test("pay initialization failure preserves recovery state", async () => {
-  const h = harness({ initializationFailure: true });
+  const h = harness({ noAttempt: true, initializationFailure: true });
   const before = h.state();
-  assert.equal((await h.call("pay")).status, 500);
-  assert.deepEqual(h.state(), before);
+  assert.equal((await h.call("pay")).status, 202);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "UNKNOWN");
+  assert.deepEqual({ ...h.state(), RecoveryPaymentAttempt: [] }, before);
 });
 
 test("pay rejects customer from another business before initialization", async () => {
-  const h = harness({ customerFields: { businessId: 2 }, noFetch: true });
+  const h = harness({ noAttempt: true, customerFields: { businessId: 2 }, noFetch: true });
   assert.equal((await h.call("pay")).status, 404);
   assert.equal(h.counts().initializations, 0);
 });
@@ -297,8 +325,8 @@ for (const recovered of [false, true]) {
     assert.equal(result.status, 200);
     assert.equal(result.body.paymentSuccessful, true);
     assert.equal(result.body.recoveryCase.status, recovered ? "RECOVERED" : "ACTION_REQUIRED");
-    assert.equal(result.body.validation.storedPaymentBinding, null);
-    assert.equal(result.body.validation.initializedPaymentBindingStored, false);
+    assert.equal(result.body.validation.storedPaymentBinding, "payment_attempt");
+    assert.equal(result.body.validation.initializedPaymentBindingStored, true);
     assert.deepEqual(h.state(), before);
     assert.equal(h.counts().transactions + h.counts().updates + h.counts().inserts, 0);
   });
@@ -336,20 +364,20 @@ for (const [name, fields] of [
   });
 }
 
-test("verification accepts matching JSON-string provider metadata without claiming stored binding", async () => {
+test("verification accepts matching JSON-string metadata with persisted binding", async () => {
   const h = harness({ readOnly: true, providerFields: { metadata: JSON.stringify({ recoveryCaseId: 1, businessId: 1, customerId: 1, source: "REVIVE" }) } });
   const result = await h.call("verify");
   assert.equal(result.status, 200);
-  assert.equal(result.body.validation.providerMetadataChecked, true);
-  assert.equal(result.body.validation.storedPaymentBinding, null);
+  assert.equal(result.body.validation.environmentMatches, true);
+  assert.equal(result.body.validation.storedPaymentBinding, "payment_attempt");
 });
 
 test("verification recognizes existing matching recovery audit evidence", async () => {
   const h = harness({ readOnly: true, recovered: true, logs: [recoveryLog] });
   const result = await h.call("verify");
   assert.equal(result.status, 200);
-  assert.equal(result.body.validation.storedPaymentBinding, "recovery_audit_log");
-  assert.equal(result.body.validation.initializedPaymentBindingStored, false);
+  assert.equal(result.body.validation.recoveryAuditPresent, true);
+  assert.equal(result.body.validation.initializedPaymentBindingStored, true);
 });
 
 for (const [name, log] of [
@@ -369,7 +397,7 @@ test("verification ignores audit records for other payment references", async ()
   const h = harness({ readOnly: true, logs: [{ ...recoveryLog, metadata: { ...recoveryLog.metadata, reference: "other" } }] });
   const result = await h.call("verify");
   assert.equal(result.status, 200);
-  assert.equal(result.body.validation.storedPaymentBinding, null);
+  assert.equal(result.body.validation.storedPaymentBinding, "payment_attempt");
 });
 
 test("verification rejects exact payment reference stored against a different transaction", async () => {
@@ -381,7 +409,7 @@ test("verification accepts an existing direct transaction binding", async () => 
   const h = harness({ readOnly: true, originalFields: { reference } });
   const result = await h.call("verify");
   assert.equal(result.status, 200);
-  assert.equal(result.body.validation.storedPaymentBinding, "transaction");
+  assert.equal(result.body.validation.originalTransactionReferenceMatches, true);
 });
 
 for (const originalFields of [{ businessId: 2 }, { customerId: 2 }, { currency: "USD" }]) {
@@ -412,4 +440,267 @@ test("verification provider exception never leaks details or writes state", asyn
   const before = h.state();
   assert.equal((await h.call("verify")).status, 500);
   assert.deepEqual(h.state(), before);
+});
+
+test("Phase 2 sequential pay reuses one persisted checkout and reference", async () => {
+  const h = harness({ noAttempt: true });
+  const first = await h.call("pay");
+  const second = await h.call("pay");
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.equal(first.body.reference, second.body.reference);
+  assert.equal(h.counts().initializations, 1);
+  assert.equal(h.state().RecoveryPaymentAttempt.length, 1);
+  assert.equal(h.state().RecoveryCase[0].recoveredAmount, 0);
+});
+
+test("Phase 2 concurrent pay reserves once and does not initialize twice", async () => {
+  const started = deferred(), release = deferred();
+  const h = harness({ noAttempt: true, initializationStarted: started, initializationRelease: release });
+  const first = h.call("pay");
+  await started.promise;
+  assert.equal(h.state().RecoveryPaymentAttempt.length, 1, "Reservation must commit before provider request");
+  const duplicate = await h.call("pay");
+  assert.equal(duplicate.status, 202);
+  assert.equal(h.counts().initializations, 1);
+  assert.equal(h.counts().verifications, 0);
+  release.resolve();
+  const completed = await first;
+  assert.equal(completed.status, 200);
+  assert.equal(duplicate.body.reference, completed.body.reference);
+});
+
+test("Phase 2 timeout reconciliation verifies the saved reference without initializing again", async () => {
+  const h = harness({ noAttempt: true, initializationFailure: true });
+  const first = await h.call("pay");
+  assert.equal(first.status, 202);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "UNKNOWN");
+  const before = h.state();
+  const retry = await h.call("pay");
+  assert.equal(retry.status, 202);
+  assert.equal(retry.body.reference, first.body.reference);
+  assert.equal(retry.body.paymentSuccessful, true);
+  assert.equal(h.counts().initializations, 1);
+  assert.equal(h.counts().verifications, 1);
+  assert.deepEqual(h.state(), before, "Reconciliation query cannot settle recovery");
+  assert.equal((await h.call("webhook")).status, 200);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "SUCCEEDED");
+  assert.equal(h.state().RecoveryCase[0].status, "RECOVERED");
+});
+
+for (const providerOptions of [
+  { providerEnvelope: { status: false, message: "Transaction reference not found" }, providerHttpStatus: 404 },
+  { verificationFailure: true }, { invalidProviderJson: true },
+  { providerFields: { status: "pending" } }, { providerFields: { status: "failed" } },
+]) {
+  test("Phase 2 ambiguous initialization never permits replacement: " + JSON.stringify(providerOptions), async () => {
+    const h = harness({ noAttempt: true, initializationFailure: true, ...providerOptions });
+    const first = await h.call("pay");
+    for (let i = 0; i < 3; i++) {
+      const retry = await h.call("pay");
+      assert.equal(retry.status, 202);
+      assert.equal(retry.body.reference, first.body.reference);
+    }
+    assert.equal(h.counts().initializations, 1);
+    assert.equal(h.state().RecoveryPaymentAttempt.length, 1);
+    assert.equal(h.state().RecoveryCase[0].recoveredAmount, 0);
+  });
+}
+
+for (const options of [
+  { initializationWrongReference: true }, { initializationHttpStatus: 502 },
+  { initializationEnvelope: { status: true, data: null } },
+]) {
+  test("Phase 2 invalid initialization response retains ambiguous attempt: " + JSON.stringify(options), async () => {
+    const h = harness({ noAttempt: true, ...options });
+    assert.equal((await h.call("pay")).status, 202);
+    assert.equal(h.state().RecoveryPaymentAttempt[0].status, "UNKNOWN");
+    assert.equal((await h.call("pay")).status, 202);
+    assert.equal(h.counts().initializations, 1);
+  });
+}
+
+test("Phase 2 failed reservation never calls provider", async () => {
+  const h = harness({ noAttempt: true, failAttemptCreate: true, noFetch: true });
+  assert.equal((await h.call("pay")).status, 500);
+  assert.equal(h.state().RecoveryPaymentAttempt.length, 0);
+  assert.equal(h.counts().initializations, 0);
+});
+
+test("Phase 2 crash after provider acceptance retains reservation and never reinitializes", async () => {
+  const h = harness({ noAttempt: true, failAttemptUpdate: true });
+  assert.equal((await h.call("pay")).status, 500);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "INITIALIZING");
+  assert.equal((await h.call("pay")).status, 202);
+  assert.equal(h.counts().initializations, 1);
+});
+
+test("Phase 2 stale initializing attempt is verified rather than initialized", async () => {
+  const h = harness({ attemptFields: { status: "INITIALIZING" } });
+  assert.equal((await h.call("pay")).status, 202);
+  assert.equal(h.counts().initializations, 0);
+  assert.equal(h.counts().verifications, 1);
+});
+
+for (const [name, fields] of [
+  ["live payment", { domain: "live" }], ["missing environment", { domain: undefined }],
+  ["metadata case", { metadata: { recoveryCaseId: 2 } }],
+  ["metadata business", { metadata: { businessId: 2 } }],
+  ["metadata customer", { metadata: { customerId: 2 } }],
+  ["metadata environment", { metadata: { environment: "live" } }],
+  ["metadata attempt", { metadata: { paymentAttemptId: 2 } }],
+  ["unsafe provider ID", { id: Number.MAX_SAFE_INTEGER + 1 }],
+]) {
+  test("Phase 2 webhook rejects " + name + " without writes", async () => {
+    const h = harness({ webhookFields: fields, noFetch: true });
+    const before = h.state();
+    assert.equal((await h.call("webhook")).status, 400);
+    assert.deepEqual(h.state(), before);
+  });
+  test("Phase 2 read-only verification rejects " + name, async () => {
+    const h = harness({ providerFields: fields, readOnly: true });
+    const before = h.state();
+    assert.equal((await h.call("verify")).status, 409);
+    assert.deepEqual(h.state(), before);
+  });
+}
+
+for (const attemptFields of [{ businessId: 2 }, { customerId: 2 }, { environment: "live" }, { providerTransactionId: "999" }]) {
+  test("Phase 2 stored attempt inconsistency rejects webhook and verification: " + JSON.stringify(attemptFields), async () => {
+    const h = harness({ attemptFields });
+    const before = h.state();
+    assert.equal((await h.call("webhook")).status, 400);
+    assert.equal((await h.call("verify")).status, 409);
+    assert.deepEqual(h.state(), before);
+  });
+}
+
+test("Phase 2 exact reference lookup cannot select another attempt by case prefix", async () => {
+  const h = harness({ webhookFields: { reference: "REVIVE-1-999999" }, noFetch: true });
+  const before = h.state();
+  const result = await h.call("webhook");
+  assert.equal(result.status, 200);
+  assert.equal(result.body.ignored, true);
+  assert.equal(result.body.manualReviewRequired, true);
+  assert.deepEqual(h.state(), before);
+});
+
+test("Phase 2 verification of unknown exact reference fails before provider access", async () => {
+  const h = harness({ noFetch: true, readOnly: true });
+  assert.equal((await h.call("verify", "REVIVE-1-999999")).status, 409);
+  assert.equal(h.counts().verifications, 0);
+});
+
+for (const recovered of [false, true]) {
+  test("Phase 2 legacy payment cannot create attempts or change recovery; recovered=" + recovered, async () => {
+    const h = harness({ noAttempt: true, recovered, noFetch: true });
+    const before = h.state();
+    const webhook = await h.call("webhook");
+    assert.equal(webhook.status, 200);
+    assert.equal(webhook.body.manualReviewRequired, true);
+    assert.equal((await h.call("verify")).status, 409);
+    assert.deepEqual(h.state(), before);
+  });
+}
+
+test("Phase 2 concurrent webhooks settle attempt, case and audit exactly once", async () => {
+  const h = harness({ noFetch: true });
+  const results = await Promise.all(Array.from({ length: 10 }, () => h.call("webhook")));
+  assert.ok(results.every(result => result.status === 200));
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "SUCCEEDED");
+  assert.equal(h.state().RecoveryPaymentAttempt[0].providerTransactionId, "12345");
+  assert.equal(h.state().RecoveryCase[0].recoveredAmount, payment.amount);
+  assert.equal(h.state().ActivityLog.length, 1);
+  assert.equal(h.state().ActivityLog[0].metadata.paymentAttemptId, 1);
+  assert.equal(h.counts().updates, 2);
+});
+
+for (const failure of ["failAudit", "failAttemptUpdate"]) {
+  test("Phase 2 " + failure + " rolls back attempt and case together", async () => {
+    const h = harness({ [failure]: true, noFetch: true });
+    const before = h.state();
+    assert.equal((await h.call("webhook")).status, 500);
+    assert.deepEqual(h.state(), before);
+  });
+}
+
+test("Phase 2 unexpected payment for already recovered case is quarantined without overwriting revenue", async () => {
+  const h = harness({ recovered: true, caseFields: { recoveredAmount: 450000 },
+    attemptFields: { status: "READY" }, noFetch: true });
+  assert.equal((await h.call("webhook")).status, 200);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "RECONCILIATION_REQUIRED");
+  assert.equal(h.state().RecoveryCase[0].recoveredAmount, 450000);
+  assert.equal(h.state().ActivityLog.length, 0);
+  const before = h.state();
+  assert.equal((await h.call("webhook")).status, 200);
+  assert.equal((await h.call("pay")).status, 409);
+  assert.equal((await h.call("recover")).status, 409);
+  assert.deepEqual(h.state(), before);
+});
+
+test("Phase 2 expected amount comes from reservation, not mutable case amount", async () => {
+  const h = harness({ caseFields: { amountAtRisk: 999999 }, readOnly: true });
+  const before = h.state();
+  const verified = await h.call("verify");
+  assert.equal(verified.status, 200);
+  assert.equal(verified.body.validation.expectedAmountSource, "payment_attempt");
+  assert.deepEqual(h.state(), before);
+});
+
+test("Phase 2 offline migration includes composite FK, uniqueness, checks and immutable binding trigger", () => {
+  const directory = new URL("../migrations/app/20261025T1009_recovery_payment_attempts/", import.meta.url);
+  const operations = JSON.parse(fs.readFileSync(new URL("ops.json", directory), "utf8"));
+  const sql = operations.flatMap(operation => operation.execute).map(step => step.sql).join("\n");
+  assert.match(sql, /FOREIGN KEY \("recoveryCaseId", "businessId"\)/);
+  assert.match(sql, /UNIQUE \("reference"\)/);
+  assert.match(sql, /UNIQUE \("recoveryCaseId", "environment"\)/);
+  assert.match(sql, /UNIQUE \("environment", "providerTransactionId"\)/);
+  assert.match(sql, /CHECK \("expectedAmount" > 0\)/);
+  assert.match(sql, /CREATE TRIGGER revive_attempt_binding_guard/);
+  for (const key of ["reference", "expectedAmount", "expectedCurrency", "recoveryCaseId", "businessId", "customerId", "environment"]) {
+    assert.ok(sql.includes('NEW."' + key + '"'));
+    assert.ok(sql.includes('OLD."' + key + '"'));
+  }
+  assert.match(sql, /TG_OP = 'DELETE'/);
+  assert.ok(!/INSERT INTO|UPDATE "public"|"RECOVERED"/.test(sql), "Migration must not backfill or change recovery records");
+});
+
+test("Phase 2 live key reserves live attempt and only live webhook settles it", async () => {
+  const h = harness({ noAttempt: true, secret: "sk_live_synthetic-key",
+    providerFields: { domain: "live" }, webhookFields: { domain: "live" } });
+  assert.equal((await h.call("pay")).status, 200);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].environment, "live");
+  assert.equal((await h.call("webhook")).status, 200);
+  assert.equal(h.state().RecoveryPaymentAttempt[0].status, "SUCCEEDED");
+  assert.equal(h.state().ActivityLog[0].metadata.environment, "live");
+});
+
+test("Phase 2 cross-environment verification fails before contacting provider", async () => {
+  const h = harness({ secret: "sk_live_synthetic-key", readOnly: true, noFetch: true });
+  const before = h.state();
+  assert.equal((await h.call("verify")).status, 409);
+  assert.deepEqual(h.state(), before);
+  assert.equal(h.counts().verifications, 0);
+});
+
+test("Phase 2 invalid key configuration cannot reserve or initialize", async () => {
+  const h = harness({ noAttempt: true, secret: "synthetic-unrecognized-key", noFetch: true });
+  assert.equal((await h.call("pay")).status, 500);
+  assert.equal(h.state().RecoveryPaymentAttempt.length, 0);
+  assert.equal(h.counts().initializations, 0);
+});
+
+test("Phase 2 read-only verification accepts the exact UUID reference reserved by pay", async () => {
+  const h = harness({ noAttempt: true });
+  const checkout = await h.call("pay");
+  assert.equal(checkout.status, 200);
+  const before = h.state();
+  const counts = h.counts();
+  const verified = await h.call("verify", checkout.body.reference);
+  assert.equal(verified.status, 200);
+  assert.equal(verified.body.payment.reference, checkout.body.reference);
+  assert.equal(verified.body.validation.initializedPaymentBindingStored, true);
+  assert.deepEqual(h.state(), before);
+  assert.equal(h.counts().transactions, counts.transactions);
+  assert.equal(h.counts().updates + h.counts().inserts, counts.updates + counts.inserts);
 });

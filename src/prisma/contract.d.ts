@@ -34,9 +34,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'21a98c981c504322f7d7b9ab90dab629021d47be518e32bb68a9283972160c3c'>;
+  StorageHashBase<'fa7b3504c1571d7ce3394dfe93dd014ecf935f36c57664697b359cdf6cbc9b65'>;
 export type ExecutionHash =
-  ExecutionHashBase<'3c57d04ce5782e40221e3fdd50484820a329e2a6304f15877b07ff6f7b68f7b4'>;
+  ExecutionHashBase<'a3d2ce2dae343ec3f55f32a0a5deddd6e74d685221fe123eb332a60ed6707bfe'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -309,6 +309,26 @@ export type FieldOutputTypes = {
       readonly identifiedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly recoveredAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     };
+    readonly RecoveryPaymentAttempt: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly reference: CodecTypes['pg/text@1']['output'];
+      readonly recoveryCaseId: CodecTypes['pg/int4@1']['output'];
+      readonly businessId: CodecTypes['pg/int4@1']['output'];
+      readonly customerId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly expectedAmount: CodecTypes['pg/int4@1']['output'];
+      readonly expectedCurrency: CodecTypes['pg/text@1']['output'];
+      readonly environment: 'test' | 'live';
+      readonly status:
+        'INITIALIZING' | 'READY' | 'UNKNOWN' | 'RECONCILIATION_REQUIRED' | 'SUCCEEDED';
+      readonly authorizationUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly accessCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly providerTransactionId: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly initializedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly lastCheckedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly succeededAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    };
     readonly Transaction: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly businessId: CodecTypes['pg/int4@1']['output'];
@@ -398,6 +418,26 @@ export type FieldInputTypes = {
       readonly recoveredAmount: CodecTypes['pg/int4@1']['input'];
       readonly identifiedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly recoveredAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
+    readonly RecoveryPaymentAttempt: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly reference: CodecTypes['pg/text@1']['input'];
+      readonly recoveryCaseId: CodecTypes['pg/int4@1']['input'];
+      readonly businessId: CodecTypes['pg/int4@1']['input'];
+      readonly customerId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly expectedAmount: CodecTypes['pg/int4@1']['input'];
+      readonly expectedCurrency: CodecTypes['pg/text@1']['input'];
+      readonly environment: 'test' | 'live';
+      readonly status:
+        'INITIALIZING' | 'READY' | 'UNKNOWN' | 'RECONCILIATION_REQUIRED' | 'SUCCEEDED';
+      readonly authorizationUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly accessCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly providerTransactionId: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly initializedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly lastCheckedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly succeededAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
     };
     readonly Transaction: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -489,6 +529,26 @@ export type StorageColumnTypes = {
         | 'DISMISSED';
       readonly transactionId: CodecTypes['pg/int4@1']['output'];
     };
+    readonly recoveryPaymentAttempt: {
+      readonly accessCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly authorizationUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly businessId: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly customerId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly environment: 'test' | 'live';
+      readonly expectedAmount: CodecTypes['pg/int4@1']['output'];
+      readonly expectedCurrency: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly initializedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly lastCheckedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly providerTransactionId: CodecTypes['pg/text@1']['output'] | null;
+      readonly recoveryCaseId: CodecTypes['pg/int4@1']['output'];
+      readonly reference: CodecTypes['pg/text@1']['output'];
+      readonly status:
+        'INITIALIZING' | 'READY' | 'UNKNOWN' | 'RECONCILIATION_REQUIRED' | 'SUCCEEDED';
+      readonly succeededAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly transaction: {
       readonly amount: CodecTypes['pg/int4@1']['output'];
       readonly businessId: CodecTypes['pg/int4@1']['output'];
@@ -579,6 +639,26 @@ export type StorageColumnInputTypes = {
         | 'DISMISSED';
       readonly transactionId: CodecTypes['pg/int4@1']['input'];
     };
+    readonly recoveryPaymentAttempt: {
+      readonly accessCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly authorizationUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly businessId: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly customerId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly environment: 'test' | 'live';
+      readonly expectedAmount: CodecTypes['pg/int4@1']['input'];
+      readonly expectedCurrency: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly initializedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly lastCheckedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly providerTransactionId: CodecTypes['pg/text@1']['input'] | null;
+      readonly recoveryCaseId: CodecTypes['pg/int4@1']['input'];
+      readonly reference: CodecTypes['pg/text@1']['input'];
+      readonly status:
+        'INITIALIZING' | 'READY' | 'UNKNOWN' | 'RECONCILIATION_REQUIRED' | 'SUCCEEDED';
+      readonly succeededAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly transaction: {
       readonly amount: CodecTypes['pg/int4@1']['input'];
       readonly businessId: CodecTypes['pg/int4@1']['input'];
@@ -623,10 +703,11 @@ export namespace Models {
     activities: public_ActivityLog[];
     customers: public_Customer[];
     members: public_BusinessMember[];
+    paymentAttempts: public_RecoveryPaymentAttempt[];
     recoveryCases: public_RecoveryCase[];
     transactions: public_Transaction[];
     readonly [RelationKeys]?:
-      'activities' | 'customers' | 'members' | 'recoveryCases' | 'transactions';
+      'activities' | 'customers' | 'members' | 'paymentAttempts' | 'recoveryCases' | 'transactions';
   };
   export type public_BusinessMember = {
     id: CodecTypes['pg/int4@1']['output'];
@@ -686,10 +767,33 @@ export namespace Models {
     actions: public_RecoveryAction[];
     business: public_Business;
     customer: public_Customer | null;
+    paymentAttempts: public_RecoveryPaymentAttempt[];
     recommendations: public_AIRecommendation[];
     transaction: public_Transaction;
     readonly [RelationKeys]?:
-      'actions' | 'business' | 'customer' | 'recommendations' | 'transaction';
+      'actions' | 'business' | 'customer' | 'paymentAttempts' | 'recommendations' | 'transaction';
+  };
+  export type public_RecoveryPaymentAttempt = {
+    id: CodecTypes['pg/int4@1']['output'];
+    reference: CodecTypes['pg/text@1']['output'];
+    recoveryCaseId: CodecTypes['pg/int4@1']['output'];
+    businessId: CodecTypes['pg/int4@1']['output'];
+    customerId: CodecTypes['pg/int4@1']['output'] | null;
+    expectedAmount: CodecTypes['pg/int4@1']['output'];
+    expectedCurrency: CodecTypes['pg/text@1']['output'];
+    environment: 'test' | 'live';
+    status: 'INITIALIZING' | 'READY' | 'UNKNOWN' | 'RECONCILIATION_REQUIRED' | 'SUCCEEDED';
+    authorizationUrl: CodecTypes['pg/text@1']['output'] | null;
+    accessCode: CodecTypes['pg/text@1']['output'] | null;
+    providerTransactionId: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    initializedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    lastCheckedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    succeededAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    business: public_Business;
+    recoveryCase: public_RecoveryCase;
+    readonly [RelationKeys]?: 'business' | 'recoveryCase';
   };
   export type public_AIRecommendation = {
     id: CodecTypes['pg/int4@1']['output'];
@@ -733,6 +837,7 @@ export declare const models: {
     Customer: Models.public_Customer;
     Transaction: Models.public_Transaction;
     RecoveryCase: Models.public_RecoveryCase;
+    RecoveryPaymentAttempt: Models.public_RecoveryPaymentAttempt;
     AIRecommendation: Models.public_AIRecommendation;
     RecoveryAction: Models.public_RecoveryAction;
     ActivityLog: Models.public_ActivityLog;
@@ -1226,7 +1331,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
+              uniques: readonly [{ readonly columns: readonly ['id', 'businessId'] }];
               indexes: readonly [
                 {
                   readonly name: 'recoveryCase_businessId_idx_ae0ed511';
@@ -1281,6 +1386,150 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'transaction';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly recoveryPaymentAttempt: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly reference: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly recoveryCaseId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly businessId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly customerId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly expectedAmount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly expectedCurrency: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly environment: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'INITIALIZING'>;
+                  };
+                };
+                readonly authorizationUrl: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly accessCode: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly providerTransactionId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                };
+                readonly initializedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                };
+                readonly lastCheckedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                };
+                readonly succeededAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['reference'] },
+                { readonly columns: readonly ['recoveryCaseId', 'environment'] },
+                { readonly columns: readonly ['environment', 'providerTransactionId'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8';
+                  readonly prefix: 'recoveryPaymentAttempt_recoveryCaseId_businessId_idx';
+                  readonly columns: readonly ['recoveryCaseId', 'businessId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'recoveryPaymentAttempt_businessId_idx_ae0ed511';
+                  readonly prefix: 'recoveryPaymentAttempt_businessId_idx';
+                  readonly columns: readonly ['businessId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'recoveryPaymentAttempt';
+                    readonly columns: readonly ['recoveryCaseId', 'businessId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'recoveryCase';
+                    readonly columns: readonly ['id', 'businessId'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'recoveryPaymentAttempt';
+                    readonly columns: readonly ['businessId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'business';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -1439,6 +1688,20 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['EMAIL', 'SMS', 'WHATSAPP', 'PAYMENT_LINK', 'MANUAL'];
             };
+            readonly PaymentAttemptStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'INITIALIZING',
+                'READY',
+                'UNKNOWN',
+                'RECONCILIATION_REQUIRED',
+                'SUCCEEDED',
+              ];
+            };
+            readonly PaymentEnvironment: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['test', 'live'];
+            };
             readonly RecoveryStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly [
@@ -1484,6 +1747,10 @@ type ContractBase = Omit<
     readonly recoveryCase: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'RecoveryCase';
+    };
+    readonly recoveryPaymentAttempt: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'RecoveryPaymentAttempt';
     };
     readonly aIRecommendation: {
       readonly namespace: 'public' & NamespaceId;
@@ -1685,6 +1952,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'BusinessMember';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['businessId'];
+                };
+              };
+              readonly paymentAttempts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RecoveryPaymentAttempt';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -2021,6 +2299,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly paymentAttempts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RecoveryPaymentAttempt';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id', 'businessId'];
+                  readonly targetFields: readonly ['recoveryCaseId', 'businessId'];
+                };
+              };
               readonly recommendations: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -2059,6 +2348,142 @@ type ContractBase = Omit<
                 readonly recoveredAmount: { readonly column: 'recoveredAmount' };
                 readonly identifiedAt: { readonly column: 'identifiedAt' };
                 readonly recoveredAt: { readonly column: 'recoveredAt' };
+              };
+            };
+          };
+          readonly RecoveryPaymentAttempt: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly reference: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recoveryCaseId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly businessId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly customerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly expectedAmount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly expectedCurrency: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly environment: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly authorizationUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly accessCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly providerTransactionId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly initializedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly lastCheckedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly succeededAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly business: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Business';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['businessId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly recoveryCase: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RecoveryCase';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['recoveryCaseId', 'businessId'];
+                  readonly targetFields: readonly ['id', 'businessId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'recoveryPaymentAttempt';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly reference: { readonly column: 'reference' };
+                readonly recoveryCaseId: { readonly column: 'recoveryCaseId' };
+                readonly businessId: { readonly column: 'businessId' };
+                readonly customerId: { readonly column: 'customerId' };
+                readonly expectedAmount: { readonly column: 'expectedAmount' };
+                readonly expectedCurrency: { readonly column: 'expectedCurrency' };
+                readonly environment: { readonly column: 'environment' };
+                readonly status: { readonly column: 'status' };
+                readonly authorizationUrl: { readonly column: 'authorizationUrl' };
+                readonly accessCode: { readonly column: 'accessCode' };
+                readonly providerTransactionId: { readonly column: 'providerTransactionId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly initializedAt: { readonly column: 'initializedAt' };
+                readonly lastCheckedAt: { readonly column: 'lastCheckedAt' };
+                readonly succeededAt: { readonly column: 'succeededAt' };
               };
             };
           };
@@ -2271,6 +2696,26 @@ type ContractBase = Omit<
               { readonly name: 'MANUAL'; readonly value: 'MANUAL' },
             ];
           };
+          readonly PaymentEnvironment: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'test'; readonly value: 'test' },
+              { readonly name: 'live'; readonly value: 'live' },
+            ];
+          };
+          readonly PaymentAttemptStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'INITIALIZING'; readonly value: 'INITIALIZING' },
+              { readonly name: 'READY'; readonly value: 'READY' },
+              { readonly name: 'UNKNOWN'; readonly value: 'UNKNOWN' },
+              {
+                readonly name: 'RECONCILIATION_REQUIRED';
+                readonly value: 'RECONCILIATION_REQUIRED';
+              },
+              { readonly name: 'SUCCEEDED'; readonly value: 'SUCCEEDED' },
+            ];
+          };
         };
       };
     };
@@ -2311,6 +2756,15 @@ type ContractBase = Omit<
           readonly ref: {
             readonly namespace: 'public';
             readonly table: 'customer';
+            readonly column: 'updatedAt';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'timestampNow' };
+          readonly onUpdate: { readonly kind: 'generator'; readonly id: 'timestampNow' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'recoveryPaymentAttempt';
             readonly column: 'updatedAt';
           };
           readonly onCreate: { readonly kind: 'generator'; readonly id: 'timestampNow' };

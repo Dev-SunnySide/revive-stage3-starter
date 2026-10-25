@@ -32,6 +32,10 @@
       "model": "RecoveryCase",
       "namespace": "public"
     },
+    "recoveryPaymentAttempt": {
+      "model": "RecoveryPaymentAttempt",
+      "namespace": "public"
+    },
     "transaction": {
       "model": "Transaction",
       "namespace": "public"
@@ -67,6 +71,44 @@
               {
                 "name": "MANUAL",
                 "value": "MANUAL"
+              }
+            ]
+          },
+          "PaymentAttemptStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "INITIALIZING",
+                "value": "INITIALIZING"
+              },
+              {
+                "name": "READY",
+                "value": "READY"
+              },
+              {
+                "name": "UNKNOWN",
+                "value": "UNKNOWN"
+              },
+              {
+                "name": "RECONCILIATION_REQUIRED",
+                "value": "RECONCILIATION_REQUIRED"
+              },
+              {
+                "name": "SUCCEEDED",
+                "value": "SUCCEEDED"
+              }
+            ]
+          },
+          "PaymentEnvironment": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "test",
+                "value": "test"
+              },
+              {
+                "name": "live",
+                "value": "live"
               }
             ]
           },
@@ -423,6 +465,21 @@
                 },
                 "to": {
                   "model": "BusinessMember",
+                  "namespace": "public"
+                }
+              },
+              "paymentAttempts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "businessId"
+                  ]
+                },
+                "to": {
+                  "model": "RecoveryPaymentAttempt",
                   "namespace": "public"
                 }
               },
@@ -925,6 +982,23 @@
                   "namespace": "public"
                 }
               },
+              "paymentAttempts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id",
+                    "businessId"
+                  ],
+                  "targetFields": [
+                    "recoveryCaseId",
+                    "businessId"
+                  ]
+                },
+                "to": {
+                  "model": "RecoveryPaymentAttempt",
+                  "namespace": "public"
+                }
+              },
               "recommendations": {
                 "cardinality": "1:N",
                 "on": {
@@ -992,6 +1066,234 @@
               },
               "namespaceId": "public",
               "table": "recoveryCase"
+            }
+          },
+          "RecoveryPaymentAttempt": {
+            "fields": {
+              "accessCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "authorizationUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "businessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "customerId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "environment": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "PaymentEnvironment",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "expectedAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "expectedCurrency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "initializedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastCheckedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerTransactionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "recoveryCaseId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "reference": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "PaymentAttemptStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "succeededAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "business": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "businessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Business",
+                  "namespace": "public"
+                }
+              },
+              "recoveryCase": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "recoveryCaseId",
+                    "businessId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "businessId"
+                  ]
+                },
+                "to": {
+                  "model": "RecoveryCase",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accessCode": {
+                  "column": "accessCode"
+                },
+                "authorizationUrl": {
+                  "column": "authorizationUrl"
+                },
+                "businessId": {
+                  "column": "businessId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "customerId": {
+                  "column": "customerId"
+                },
+                "environment": {
+                  "column": "environment"
+                },
+                "expectedAmount": {
+                  "column": "expectedAmount"
+                },
+                "expectedCurrency": {
+                  "column": "expectedCurrency"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "initializedAt": {
+                  "column": "initializedAt"
+                },
+                "lastCheckedAt": {
+                  "column": "lastCheckedAt"
+                },
+                "providerTransactionId": {
+                  "column": "providerTransactionId"
+                },
+                "recoveryCaseId": {
+                  "column": "recoveryCaseId"
+                },
+                "reference": {
+                  "column": "reference"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "succeededAt": {
+                  "column": "succeededAt"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "recoveryPaymentAttempt"
             }
           },
           "Transaction": {
@@ -1935,7 +2237,232 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "id",
+                    "businessId"
+                  ]
+                }
+              ]
+            },
+            "recoveryPaymentAttempt": {
+              "checks": [
+                {
+                  "expression": "\"expectedAmount\" > 0",
+                  "name": "attempt_positive_amount_62ceb3db",
+                  "prefix": "attempt_positive_amount"
+                },
+                {
+                  "expression": "\"expectedCurrency\" = 'NGN'",
+                  "name": "attempt_supported_currency_052e0d54",
+                  "prefix": "attempt_supported_currency"
+                },
+                {
+                  "expression": "\"environment\" IN ('test', 'live')",
+                  "name": "recoveryPaymentAttempt_environment_check_fa07de53",
+                  "prefix": "recoveryPaymentAttempt_environment_check"
+                },
+                {
+                  "expression": "\"status\" IN ('INITIALIZING', 'READY', 'UNKNOWN', 'RECONCILIATION_REQUIRED', 'SUCCEEDED')",
+                  "name": "recoveryPaymentAttempt_status_check_064f6f30",
+                  "prefix": "recoveryPaymentAttempt_status_check"
+                }
+              ],
+              "columns": {
+                "accessCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "authorizationUrl": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "businessId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "customerId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "environment": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "PaymentEnvironment",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "expectedAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "expectedCurrency": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "initializedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "lastCheckedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "providerTransactionId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "recoveryCaseId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "reference": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "INITIALIZING"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "PaymentAttemptStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "succeededAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "recoveryCaseId",
+                      "businessId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "recoveryPaymentAttempt"
+                  },
+                  "target": {
+                    "columns": [
+                      "id",
+                      "businessId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "recoveryCase"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "businessId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "recoveryPaymentAttempt"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "business"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "businessId"
+                  ],
+                  "name": "recoveryPaymentAttempt_businessId_idx_ae0ed511",
+                  "prefix": "recoveryPaymentAttempt_businessId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "recoveryCaseId",
+                    "businessId"
+                  ],
+                  "name": "recoveryPaymentAttempt_recoveryCaseId_businessId_idx_56c18fe8",
+                  "prefix": "recoveryPaymentAttempt_recoveryCaseId_businessId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "reference"
+                  ]
+                },
+                {
+                  "columns": [
+                    "recoveryCaseId",
+                    "environment"
+                  ]
+                },
+                {
+                  "columns": [
+                    "environment",
+                    "providerTransactionId"
+                  ]
+                }
+              ]
             },
             "transaction": {
               "checks": [
@@ -2160,6 +2687,23 @@
                 "MANUAL"
               ]
             },
+            "PaymentAttemptStatus": {
+              "kind": "valueSet",
+              "values": [
+                "INITIALIZING",
+                "READY",
+                "UNKNOWN",
+                "RECONCILIATION_REQUIRED",
+                "SUCCEEDED"
+              ]
+            },
+            "PaymentEnvironment": {
+              "kind": "valueSet",
+              "values": [
+                "test",
+                "live"
+              ]
+            },
             "RecoveryStatus": {
               "kind": "valueSet",
               "values": [
@@ -2195,10 +2739,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "21a98c981c504322f7d7b9ab90dab629021d47be518e32bb68a9283972160c3c"
+    "storageHash": "fa7b3504c1571d7ce3394dfe93dd014ecf935f36c57664697b359cdf6cbc9b65"
   },
   "execution": {
-    "executionHash": "3c57d04ce5782e40221e3fdd50484820a329e2a6304f15877b07ff6f7b68f7b4",
+    "executionHash": "a3d2ce2dae343ec3f55f32a0a5deddd6e74d685221fe123eb332a60ed6707bfe",
     "mutations": {
       "defaults": [
         {
@@ -2229,6 +2773,21 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "customer"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "recoveryPaymentAttempt"
           }
         },
         {

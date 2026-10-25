@@ -1,0 +1,1468 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.aIRecommendation",
+    "label": "Create table \"aIRecommendation\"",
+    "summary": "Creates table \"aIRecommendation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "aIRecommendation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"aIRecommendation\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"aIRecommendation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"aIRecommendation\"",
+        "sql": "CREATE TABLE \"public\".\"aIRecommendation\" (\n  \"confidence\" float8,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"reasoning\" text,\n  \"recommendation\" text NOT NULL,\n  \"recoveryCaseId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"aIRecommendation\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"aIRecommendation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.activityLog",
+    "label": "Create table \"activityLog\"",
+    "summary": "Creates table \"activityLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "activityLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"activityLog\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"activityLog\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"activityLog\"",
+        "sql": "CREATE TABLE \"public\".\"activityLog\" (\n  \"action\" text NOT NULL,\n  \"businessId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"metadata\" json,\n  \"userId\" int4,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"activityLog\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"activityLog\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.business",
+    "label": "Create table \"business\"",
+    "summary": "Creates table \"business\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "business"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"business\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"business\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"business\"",
+        "sql": "CREATE TABLE \"public\".\"business\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'NGN' NOT NULL,\n  \"description\" text,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"business\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"business\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.businessMember",
+    "label": "Create table \"businessMember\"",
+    "summary": "Creates table \"businessMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "businessMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"businessMember\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"businessMember\"",
+        "sql": "CREATE TABLE \"public\".\"businessMember\" (\n  \"businessId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"businessMember\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.customer",
+    "label": "Create table \"customer\"",
+    "summary": "Creates table \"customer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "customer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"customer\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"customer\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"customer\"",
+        "sql": "CREATE TABLE \"public\".\"customer\" (\n  \"businessId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"phone\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"customer\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"customer\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.recoveryAction",
+    "label": "Create table \"recoveryAction\"",
+    "summary": "Creates table \"recoveryAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "recoveryAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"recoveryAction\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryAction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"recoveryAction\"",
+        "sql": "CREATE TABLE \"public\".\"recoveryAction\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"executedAt\" timestamptz,\n  \"id\" SERIAL NOT NULL,\n  \"message\" text,\n  \"recoveryCaseId\" int4 NOT NULL,\n  \"status\" text DEFAULT 'PENDING' NOT NULL,\n  \"type\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"recoveryAction_type_check_4243b536\" CHECK (\"type\" IN ('EMAIL', 'SMS', 'WHATSAPP', 'PAYMENT_LINK', 'MANUAL'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"recoveryAction\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryAction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.recoveryCase",
+    "label": "Create table \"recoveryCase\"",
+    "summary": "Creates table \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"recoveryCase\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"recoveryCase\"",
+        "sql": "CREATE TABLE \"public\".\"recoveryCase\" (\n  \"amountAtRisk\" int4 NOT NULL,\n  \"businessId\" int4 NOT NULL,\n  \"customerId\" int4,\n  \"id\" SERIAL NOT NULL,\n  \"identifiedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"reason\" text NOT NULL,\n  \"recoveredAmount\" int4 DEFAULT 0 NOT NULL,\n  \"recoveredAt\" timestamptz,\n  \"status\" text DEFAULT 'IDENTIFIED' NOT NULL,\n  \"transactionId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"recoveryCase_status_check_0994c2cc\" CHECK (\"status\" IN ('IDENTIFIED', 'ANALYZING', 'ACTION_REQUIRED', 'IN_PROGRESS', 'RECOVERED', 'FAILED', 'DISMISSED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"recoveryCase\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.transaction",
+    "label": "Create table \"transaction\"",
+    "summary": "Creates table \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"transaction\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"transaction\"",
+        "sql": "CREATE TABLE \"public\".\"transaction\" (\n  \"amount\" int4 NOT NULL,\n  \"businessId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'NGN' NOT NULL,\n  \"customerId\" int4,\n  \"id\" SERIAL NOT NULL,\n  \"paidAt\" timestamptz,\n  \"reference\" text NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"transaction_status_check_d65fcf38\" CHECK (\"status\" IN ('PENDING', 'SUCCESSFUL', 'FAILED', 'REFUNDED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"transaction\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.user",
+    "label": "Create table \"user\"",
+    "summary": "Creates table \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"user\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"user\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"user\"",
+        "sql": "CREATE TABLE \"public\".\"user\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"role\" text DEFAULT 'MEMBER' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"user_role_check_50a44636\" CHECK (\"role\" IN ('OWNER', 'ADMIN', 'MEMBER'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"user\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"user\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.businessMember.businessMember_userId_businessId_key",
+    "label": "Add unique constraint on \"businessMember\" (userId, businessId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "businessMember_userId_businessId_key",
+        "table": "businessMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"businessMember_userId_businessId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "businessMember_userId_businessId_key",
+          "public",
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"businessMember_userId_businessId_key\"",
+        "sql": "ALTER TABLE \"public\".\"businessMember\" ADD CONSTRAINT \"businessMember_userId_businessId_key\" UNIQUE (\"userId\", \"businessId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"businessMember_userId_businessId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "businessMember_userId_businessId_key",
+          "public",
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.transaction.transaction_reference_key",
+    "label": "Add unique constraint on \"transaction\" (reference)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "transaction_reference_key",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"transaction_reference_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_reference_key",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"transaction_reference_key\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\" ADD CONSTRAINT \"transaction_reference_key\" UNIQUE (\"reference\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"transaction_reference_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_reference_key",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.user.user_email_key",
+    "label": "Add unique constraint on \"user\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "user_email_key",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"user_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "user_email_key",
+          "public",
+          "\"public\".\"user\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"user_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD CONSTRAINT \"user_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"user_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "user_email_key",
+          "public",
+          "\"public\".\"user\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.aIRecommendation.aIRecommendation_recoveryCaseId_idx_aa8ef860",
+    "label": "Create index \"aIRecommendation_recoveryCaseId_idx_aa8ef860\" on \"aIRecommendation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "aIRecommendation_recoveryCaseId_idx_aa8ef860",
+        "table": "aIRecommendation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"aIRecommendation_recoveryCaseId_idx_aa8ef860\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"aIRecommendation_recoveryCaseId_idx_aa8ef860\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"aIRecommendation_recoveryCaseId_idx_aa8ef860\"",
+        "sql": "CREATE INDEX \"aIRecommendation_recoveryCaseId_idx_aa8ef860\" ON \"public\".\"aIRecommendation\" (\"recoveryCaseId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"aIRecommendation_recoveryCaseId_idx_aa8ef860\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"aIRecommendation_recoveryCaseId_idx_aa8ef860\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.activityLog.activityLog_businessId_idx_ae0ed511",
+    "label": "Create index \"activityLog_businessId_idx_ae0ed511\" on \"activityLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "activityLog_businessId_idx_ae0ed511",
+        "table": "activityLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"activityLog_businessId_idx_ae0ed511\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"activityLog_businessId_idx_ae0ed511\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"activityLog_businessId_idx_ae0ed511\"",
+        "sql": "CREATE INDEX \"activityLog_businessId_idx_ae0ed511\" ON \"public\".\"activityLog\" (\"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"activityLog_businessId_idx_ae0ed511\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"activityLog_businessId_idx_ae0ed511\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.activityLog.activityLog_userId_idx_a489d58a",
+    "label": "Create index \"activityLog_userId_idx_a489d58a\" on \"activityLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "activityLog_userId_idx_a489d58a",
+        "table": "activityLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"activityLog_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"activityLog_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"activityLog_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"activityLog_userId_idx_a489d58a\" ON \"public\".\"activityLog\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"activityLog_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"activityLog_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.businessMember.businessMember_businessId_idx_ae0ed511",
+    "label": "Create index \"businessMember_businessId_idx_ae0ed511\" on \"businessMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "businessMember_businessId_idx_ae0ed511",
+        "table": "businessMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"businessMember_businessId_idx_ae0ed511\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"businessMember_businessId_idx_ae0ed511\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"businessMember_businessId_idx_ae0ed511\"",
+        "sql": "CREATE INDEX \"businessMember_businessId_idx_ae0ed511\" ON \"public\".\"businessMember\" (\"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"businessMember_businessId_idx_ae0ed511\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"businessMember_businessId_idx_ae0ed511\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.businessMember.businessMember_userId_idx_a489d58a",
+    "label": "Create index \"businessMember_userId_idx_a489d58a\" on \"businessMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "businessMember_userId_idx_a489d58a",
+        "table": "businessMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"businessMember_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"businessMember_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"businessMember_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"businessMember_userId_idx_a489d58a\" ON \"public\".\"businessMember\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"businessMember_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"businessMember_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.customer.customer_businessId_idx_ae0ed511",
+    "label": "Create index \"customer_businessId_idx_ae0ed511\" on \"customer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "customer_businessId_idx_ae0ed511",
+        "table": "customer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"customer_businessId_idx_ae0ed511\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"customer_businessId_idx_ae0ed511\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"customer_businessId_idx_ae0ed511\"",
+        "sql": "CREATE INDEX \"customer_businessId_idx_ae0ed511\" ON \"public\".\"customer\" (\"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"customer_businessId_idx_ae0ed511\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"customer_businessId_idx_ae0ed511\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.recoveryAction.recoveryAction_recoveryCaseId_idx_aa8ef860",
+    "label": "Create index \"recoveryAction_recoveryCaseId_idx_aa8ef860\" on \"recoveryAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "recoveryAction_recoveryCaseId_idx_aa8ef860",
+        "table": "recoveryAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"recoveryAction_recoveryCaseId_idx_aa8ef860\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryAction_recoveryCaseId_idx_aa8ef860\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"recoveryAction_recoveryCaseId_idx_aa8ef860\"",
+        "sql": "CREATE INDEX \"recoveryAction_recoveryCaseId_idx_aa8ef860\" ON \"public\".\"recoveryAction\" (\"recoveryCaseId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"recoveryAction_recoveryCaseId_idx_aa8ef860\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryAction_recoveryCaseId_idx_aa8ef860\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.recoveryCase.recoveryCase_businessId_idx_ae0ed511",
+    "label": "Create index \"recoveryCase_businessId_idx_ae0ed511\" on \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "recoveryCase_businessId_idx_ae0ed511",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"recoveryCase_businessId_idx_ae0ed511\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase_businessId_idx_ae0ed511\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"recoveryCase_businessId_idx_ae0ed511\"",
+        "sql": "CREATE INDEX \"recoveryCase_businessId_idx_ae0ed511\" ON \"public\".\"recoveryCase\" (\"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"recoveryCase_businessId_idx_ae0ed511\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase_businessId_idx_ae0ed511\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.recoveryCase.recoveryCase_customerId_idx_b2a8a46c",
+    "label": "Create index \"recoveryCase_customerId_idx_b2a8a46c\" on \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "recoveryCase_customerId_idx_b2a8a46c",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"recoveryCase_customerId_idx_b2a8a46c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase_customerId_idx_b2a8a46c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"recoveryCase_customerId_idx_b2a8a46c\"",
+        "sql": "CREATE INDEX \"recoveryCase_customerId_idx_b2a8a46c\" ON \"public\".\"recoveryCase\" (\"customerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"recoveryCase_customerId_idx_b2a8a46c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase_customerId_idx_b2a8a46c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.recoveryCase.recoveryCase_transactionId_idx_d3180832",
+    "label": "Create index \"recoveryCase_transactionId_idx_d3180832\" on \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "recoveryCase_transactionId_idx_d3180832",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"recoveryCase_transactionId_idx_d3180832\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase_transactionId_idx_d3180832\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"recoveryCase_transactionId_idx_d3180832\"",
+        "sql": "CREATE INDEX \"recoveryCase_transactionId_idx_d3180832\" ON \"public\".\"recoveryCase\" (\"transactionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"recoveryCase_transactionId_idx_d3180832\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"recoveryCase_transactionId_idx_d3180832\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.transaction.transaction_businessId_idx_ae0ed511",
+    "label": "Create index \"transaction_businessId_idx_ae0ed511\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "transaction_businessId_idx_ae0ed511",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"transaction_businessId_idx_ae0ed511\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction_businessId_idx_ae0ed511\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"transaction_businessId_idx_ae0ed511\"",
+        "sql": "CREATE INDEX \"transaction_businessId_idx_ae0ed511\" ON \"public\".\"transaction\" (\"businessId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"transaction_businessId_idx_ae0ed511\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction_businessId_idx_ae0ed511\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.transaction.transaction_customerId_idx_b2a8a46c",
+    "label": "Create index \"transaction_customerId_idx_b2a8a46c\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "transaction_customerId_idx_b2a8a46c",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"transaction_customerId_idx_b2a8a46c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction_customerId_idx_b2a8a46c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"transaction_customerId_idx_b2a8a46c\"",
+        "sql": "CREATE INDEX \"transaction_customerId_idx_b2a8a46c\" ON \"public\".\"transaction\" (\"customerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"transaction_customerId_idx_b2a8a46c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"transaction_customerId_idx_b2a8a46c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.aIRecommendation.aIRecommendation_recoveryCaseId_fkey",
+    "label": "Add foreign key \"aIRecommendation_recoveryCaseId_fkey\" on \"aIRecommendation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "aIRecommendation_recoveryCaseId_fkey",
+        "table": "aIRecommendation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"aIRecommendation_recoveryCaseId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "aIRecommendation_recoveryCaseId_fkey",
+          "public",
+          "\"public\".\"aIRecommendation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"aIRecommendation_recoveryCaseId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"aIRecommendation\"\nADD CONSTRAINT \"aIRecommendation_recoveryCaseId_fkey\"\nFOREIGN KEY (\"recoveryCaseId\")\nREFERENCES \"public\".\"recoveryCase\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"aIRecommendation_recoveryCaseId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "aIRecommendation_recoveryCaseId_fkey",
+          "public",
+          "\"public\".\"aIRecommendation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.activityLog.activityLog_businessId_fkey",
+    "label": "Add foreign key \"activityLog_businessId_fkey\" on \"activityLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "activityLog_businessId_fkey",
+        "table": "activityLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"activityLog_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "activityLog_businessId_fkey",
+          "public",
+          "\"public\".\"activityLog\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"activityLog_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"activityLog\"\nADD CONSTRAINT \"activityLog_businessId_fkey\"\nFOREIGN KEY (\"businessId\")\nREFERENCES \"public\".\"business\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"activityLog_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "activityLog_businessId_fkey",
+          "public",
+          "\"public\".\"activityLog\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.activityLog.activityLog_userId_fkey",
+    "label": "Add foreign key \"activityLog_userId_fkey\" on \"activityLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "activityLog_userId_fkey",
+        "table": "activityLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"activityLog_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "activityLog_userId_fkey",
+          "public",
+          "\"public\".\"activityLog\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"activityLog_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"activityLog\"\nADD CONSTRAINT \"activityLog_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"activityLog_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "activityLog_userId_fkey",
+          "public",
+          "\"public\".\"activityLog\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.businessMember.businessMember_userId_fkey",
+    "label": "Add foreign key \"businessMember_userId_fkey\" on \"businessMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "businessMember_userId_fkey",
+        "table": "businessMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"businessMember_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "businessMember_userId_fkey",
+          "public",
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"businessMember_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"businessMember\"\nADD CONSTRAINT \"businessMember_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"businessMember_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "businessMember_userId_fkey",
+          "public",
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.businessMember.businessMember_businessId_fkey",
+    "label": "Add foreign key \"businessMember_businessId_fkey\" on \"businessMember\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "businessMember_businessId_fkey",
+        "table": "businessMember"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"businessMember_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "businessMember_businessId_fkey",
+          "public",
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"businessMember_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"businessMember\"\nADD CONSTRAINT \"businessMember_businessId_fkey\"\nFOREIGN KEY (\"businessId\")\nREFERENCES \"public\".\"business\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"businessMember_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "businessMember_businessId_fkey",
+          "public",
+          "\"public\".\"businessMember\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.customer.customer_businessId_fkey",
+    "label": "Add foreign key \"customer_businessId_fkey\" on \"customer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "customer_businessId_fkey",
+        "table": "customer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"customer_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customer_businessId_fkey",
+          "public",
+          "\"public\".\"customer\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"customer_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"customer\"\nADD CONSTRAINT \"customer_businessId_fkey\"\nFOREIGN KEY (\"businessId\")\nREFERENCES \"public\".\"business\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"customer_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customer_businessId_fkey",
+          "public",
+          "\"public\".\"customer\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.recoveryAction.recoveryAction_recoveryCaseId_fkey",
+    "label": "Add foreign key \"recoveryAction_recoveryCaseId_fkey\" on \"recoveryAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "recoveryAction_recoveryCaseId_fkey",
+        "table": "recoveryAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"recoveryAction_recoveryCaseId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryAction_recoveryCaseId_fkey",
+          "public",
+          "\"public\".\"recoveryAction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"recoveryAction_recoveryCaseId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryAction\"\nADD CONSTRAINT \"recoveryAction_recoveryCaseId_fkey\"\nFOREIGN KEY (\"recoveryCaseId\")\nREFERENCES \"public\".\"recoveryCase\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"recoveryAction_recoveryCaseId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryAction_recoveryCaseId_fkey",
+          "public",
+          "\"public\".\"recoveryAction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.recoveryCase.recoveryCase_businessId_fkey",
+    "label": "Add foreign key \"recoveryCase_businessId_fkey\" on \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "recoveryCase_businessId_fkey",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"recoveryCase_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_businessId_fkey",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"recoveryCase_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryCase\"\nADD CONSTRAINT \"recoveryCase_businessId_fkey\"\nFOREIGN KEY (\"businessId\")\nREFERENCES \"public\".\"business\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"recoveryCase_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_businessId_fkey",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.recoveryCase.recoveryCase_customerId_fkey",
+    "label": "Add foreign key \"recoveryCase_customerId_fkey\" on \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "recoveryCase_customerId_fkey",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"recoveryCase_customerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_customerId_fkey",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"recoveryCase_customerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryCase\"\nADD CONSTRAINT \"recoveryCase_customerId_fkey\"\nFOREIGN KEY (\"customerId\")\nREFERENCES \"public\".\"customer\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"recoveryCase_customerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_customerId_fkey",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.recoveryCase.recoveryCase_transactionId_fkey",
+    "label": "Add foreign key \"recoveryCase_transactionId_fkey\" on \"recoveryCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "recoveryCase_transactionId_fkey",
+        "table": "recoveryCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"recoveryCase_transactionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_transactionId_fkey",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"recoveryCase_transactionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"recoveryCase\"\nADD CONSTRAINT \"recoveryCase_transactionId_fkey\"\nFOREIGN KEY (\"transactionId\")\nREFERENCES \"public\".\"transaction\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"recoveryCase_transactionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "recoveryCase_transactionId_fkey",
+          "public",
+          "\"public\".\"recoveryCase\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.transaction.transaction_businessId_fkey",
+    "label": "Add foreign key \"transaction_businessId_fkey\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "transaction_businessId_fkey",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"transaction_businessId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_businessId_fkey",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"transaction_businessId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\"\nADD CONSTRAINT \"transaction_businessId_fkey\"\nFOREIGN KEY (\"businessId\")\nREFERENCES \"public\".\"business\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"transaction_businessId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_businessId_fkey",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.transaction.transaction_customerId_fkey",
+    "label": "Add foreign key \"transaction_customerId_fkey\" on \"transaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "transaction_customerId_fkey",
+        "table": "transaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"transaction_customerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_customerId_fkey",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"transaction_customerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"transaction\"\nADD CONSTRAINT \"transaction_customerId_fkey\"\nFOREIGN KEY (\"customerId\")\nREFERENCES \"public\".\"customer\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"transaction_customerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "transaction_customerId_fkey",
+          "public",
+          "\"public\".\"transaction\""
+        ]
+      }
+    ]
+  }
+]
