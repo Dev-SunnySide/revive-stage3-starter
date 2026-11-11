@@ -394,7 +394,7 @@
     "postcheck": [
       {
         "description": "guard is attached and enabled",
-        "sql": "\nSELECT EXISTS (SELECT 1 FROM pg_trigger\nWHERE tgrelid = 'public.\"recoveryPaymentAttempt\"'::regclass\nAND tgname = 'revive_attempt_binding_guard' AND tgenabled = 'O'\nAND tgfoid = 'public.revive_attempt_binding_guard()'::regprocedure) AS result"
+        "sql": "\nSELECT EXISTS (SELECT 1 FROM pg_trigger\nWHERE tgrelid = to_regclass('public.\"recoveryPaymentAttempt\"')\nAND tgname = 'revive_attempt_binding_guard' AND tgenabled = 'O'\nAND tgfoid = to_regprocedure('public.revive_attempt_binding_guard()')) AS result"
       }
     ]
   }

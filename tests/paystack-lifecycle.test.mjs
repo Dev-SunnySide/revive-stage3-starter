@@ -663,6 +663,14 @@ test("Phase 2 offline migration includes composite FK, uniqueness, checks and im
   }
   assert.match(sql, /TG_OP = 'DELETE'/);
   assert.ok(!/INSERT INTO|UPDATE "public"|"RECOVERED"/.test(sql), "Migration must not backfill or change recovery records");
+  // The runner evaluates postchecks before execution to skip satisfied operations,
+  // so checks must not raise on missing objects (::regclass/::regprocedure casts do).
+  for (const operation of operations) {
+    for (const step of [...operation.precheck, ...operation.postcheck]) {
+      assert.ok(!/::reg(class|procedure|proc|type)\b/i.test(step.sql),
+        `${operation.id} check "${step.description}" must use to_reg*() instead of a raising ::reg* cast`);
+    }
+  }
 });
 
 test("Phase 2 live key reserves live attempt and only live webhook settles it", async () => {

@@ -163,11 +163,14 @@ CREATE TRIGGER revive_attempt_binding_guard
 BEFORE UPDATE OR DELETE ON public."recoveryPaymentAttempt"
 FOR EACH ROW EXECUTE FUNCTION public.revive_attempt_binding_guard()` },
         ],
+        // The runner evaluates postchecks before executing (idempotency skip),
+        // so they must return false, not raise, when objects are absent:
+        // use to_regclass/to_regprocedure, never ::regclass/::regprocedure casts.
         postcheck: [{ description: 'guard is attached and enabled', sql: `
 SELECT EXISTS (SELECT 1 FROM pg_trigger
-WHERE tgrelid = 'public."recoveryPaymentAttempt"'::regclass
+WHERE tgrelid = to_regclass('public."recoveryPaymentAttempt"')
 AND tgname = 'revive_attempt_binding_guard' AND tgenabled = 'O'
-AND tgfoid = 'public.revive_attempt_binding_guard()'::regprocedure) AS result` }],
+AND tgfoid = to_regprocedure('public.revive_attempt_binding_guard()')) AS result` }],
       }),
     ];
   }
